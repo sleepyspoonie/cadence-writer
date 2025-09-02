@@ -1,0 +1,1540 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Settings - Focus Writer</title>
+    <link rel="stylesheet" href="style.css">
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: var(--color-bg-primary);
+        color: var(--color-text-primary);
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    header {
+        height: 60px !important;
+        padding: 0 2rem !important;
+    }
+    
+    .optionsnav {
+        height: 100%;
+    }
+    
+    .settings-container {
+        flex: 1;
+        padding: 3rem;
+        max-width: 900px;
+        margin: 0 auto;
+        width: 100%;
+    }
+    
+    h1 {
+        font-size: 2.5rem;
+        margin-bottom: 2rem;
+        color: var(--color-text-primary);
+    }
+    
+    .settings-section {
+        background: var(--color-bg-secondary);
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    
+    .settings-section h2 {
+        color: var(--color-accent);
+        margin-bottom: 1.5rem;
+        font-size: 1.3rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--color-border);
+    }
+    
+    .setting-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--color-border);
+    }
+    
+    .setting-item:last-child {
+        border-bottom: none;
+    }
+    
+    .setting-info {
+        flex: 1;
+    }
+    
+    .setting-label {
+        font-size: 1rem;
+        color: var(--color-text-primary);
+        margin-bottom: 0.25rem;
+        display: block;
+    }
+    
+    .setting-description {
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+    }
+    
+    .setting-control {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    /* Toggle Switch */
+    .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 26px;
+    }
+    
+    .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .toggle-slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--color-border);
+        transition: .3s;
+        border-radius: 26px;
+    }
+    
+    .toggle-slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .3s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .toggle-slider {
+        background-color: var(--color-accent);
+    }
+    
+    input:checked + .toggle-slider:before {
+        transform: translateX(24px);
+    }
+    
+    /* Theme Selector */
+    .theme-selector {
+        display: flex;
+        gap: 1rem;
+    }
+    
+    .theme-option {
+        position: relative;
+        cursor: pointer;
+    }
+    
+    .theme-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+    
+    .theme-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        background: var(--color-bg-tertiary);
+        border: 2px solid var(--color-border);
+        border-radius: 8px;
+        transition: all 0.3s;
+        cursor: pointer;
+        min-width: 80px;
+    }
+    
+    .theme-option input:checked + label {
+        border-color: var(--color-accent);
+        background: var(--color-accent-muted);
+    }
+    
+    .theme-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .theme-light {
+        background: #ffffff;
+        color: #000;
+    }
+    
+    .theme-dark {
+        background: #1a1a1a;
+        color: #fff;
+    }
+    
+    .theme-custom {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        color: #fff;
+    }
+    
+    .theme-name {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+    }
+    
+    /* Mode selector */
+    .mode-selector {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .mode-option {
+        position: relative;
+        cursor: pointer;
+    }
+    
+    .mode-option input[type="radio"] {
+        position: absolute;
+        opacity: 0;
+    }
+    
+    .mode-option label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 1rem;
+        background: var(--color-bg-tertiary);
+        border: 2px solid var(--color-border);
+        border-radius: 8px;
+        transition: all 0.3s;
+        cursor: pointer;
+        min-width: 100px;
+    }
+    
+    .mode-option input:checked + label {
+        border-color: var(--color-accent);
+        background: var(--color-accent-muted);
+    }
+    
+    .mode-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .mode-name {
+        font-size: 0.85rem;
+        color: var(--color-text-secondary);
+    }
+    
+    /* Mode configuration panels */
+    .mode-config {
+        background: var(--color-bg-tertiary);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-top: 1rem;
+        display: none;
+    }
+    
+    .mode-config.active {
+        display: block;
+    }
+    
+    .config-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .config-group:last-child {
+        margin-bottom: 0;
+    }
+    
+    .config-label {
+        font-size: 0.95rem;
+        color: var(--color-accent);
+        margin-bottom: 0.75rem;
+        display: block;
+    }
+    
+    .number-input {
+        padding: 0.5rem;
+        background: var(--color-bg-primary);
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        color: var(--color-text-primary);
+        width: 100px;
+        margin-right: 0.5rem;
+    }
+    
+    .number-input:focus {
+        outline: none;
+        border-color: var(--color-accent);
+    }
+    
+    .radio-group {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .radio-group label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        color: var(--color-text-secondary);
+    }
+    
+    .folder-link {
+        color: var(--color-accent);
+        text-decoration: underline;
+        cursor: pointer;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+        display: inline-block;
+    }
+    
+    .folder-link:hover {
+        color: var(--color-accent-hover);
+    }
+    
+    .warning-text {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+    
+    /* Custom Theme Panel */
+    .custom-theme-panel {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        background: var(--color-bg-tertiary);
+        border-radius: 8px;
+        display: none;
+    }
+    
+    .custom-theme-panel.active {
+        display: block;
+    }
+    
+    .custom-theme-panel h3 {
+        color: var(--color-accent);
+        margin-bottom: 1rem;
+    }
+    
+    .color-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+    
+    .color-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .color-label {
+        flex: 1;
+        font-size: 0.9rem;
+        color: var(--color-text-secondary);
+    }
+    
+    .color-input-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    input[type="color"] {
+        width: 40px;
+        height: 40px;
+        border: 2px solid var(--color-border);
+        border-radius: 6px;
+        cursor: pointer;
+        background: transparent;
+    }
+    
+    .color-value {
+        font-family: monospace;
+        font-size: 0.85rem;
+        color: var(--color-text-muted);
+        min-width: 70px;
+    }
+    
+    /* Select and inputs */
+    .select-wrapper {
+        position: relative;
+    }
+    
+    .setting-select {
+        padding: 0.5rem 2rem 0.5rem 1rem;
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        font-size: 0.95rem;
+        appearance: none;
+        min-width: 150px;
+    }
+    
+    .setting-select:focus {
+        outline: none;
+        border-color: var(--color-accent);
+    }
+    
+    .select-wrapper::after {
+        content: '▼';
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: var(--color-text-muted);
+        font-size: 0.75rem;
+    }
+    
+    .folder-path {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .path-display {
+        padding: 0.5rem 1rem;
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        color: var(--color-text-muted);
+        font-size: 0.85rem;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    
+    .browse-btn {
+        padding: 0.5rem 1rem;
+        background: var(--color-bg-tertiary);
+        border: 1px solid var(--color-border);
+        border-radius: 6px;
+        color: var(--color-text-primary);
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+    
+    .browse-btn:hover {
+        background: var(--color-bg-tertiary);
+        border-color: var(--color-accent);
+        color: var(--color-accent);
+    }
+    
+    .range-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    
+    .range-value {
+        min-width: 50px;
+        text-align: center;
+        color: var(--color-accent);
+        font-weight: 600;
+    }
+    
+    input[type="range"] {
+        width: 150px;
+        height: 6px;
+        background: var(--color-border);
+        border-radius: 3px;
+        outline: none;
+    }
+    
+    input[type="range"]::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        background: var(--color-accent);
+        cursor: pointer;
+        border-radius: 50%;
+    }
+    
+    .save-section {
+        text-align: center;
+        margin-top: 2rem;
+    }
+    
+    .save-button {
+        padding: 0.875rem 3rem;
+        background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .save-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(20, 184, 166, 0.4);
+    }
+    
+    .save-message {
+        margin-top: 1rem;
+        color: var(--color-accent);
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    
+    .save-message.show {
+        opacity: 1;
+    }
+
+    .preset-btn:hover {
+        background: var(--color-bg-tertiary) !important;
+        border-color: var(--color-accent) !important;
+        color: var(--color-accent) !important;
+    }
+
+    .preset-btn.active {
+        background: var(--color-accent-muted) !important;
+        border-color: var(--color-accent) !important;
+        color: var(--color-accent) !important;
+    }
+
+    .toggle-slider.disabled {
+        background-color: #666 !important;
+        opacity: 0.5;
+    }
+
+    .toggle-slider.disabled:before {
+        background-color: #999 !important;
+    }
+</style>
+</head>
+<body>
+    <header>
+        <div class="optionsnav">
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="files.html">Files</a></li>
+                <li><a href="statistics.html">Statistics</a></li>
+                <li>Settings</li>
+            </ul>
+            <button class="fullscreen-btn" id="fullscreenToggle" title="Toggle Fullscreen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+    
+    <div class="settings-container">
+        <h1>Settings</h1>
+        
+        <!-- Files & Storage -->
+        <div class="settings-section">
+            <h2>Files & Storage</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Documents Folder</span>
+                    <span class="setting-description">Where your writing files are saved</span>
+                </div>
+                <div class="setting-control">
+                    <div class="folder-path">
+                        <span class="path-display" id="currentPath">Not set</span>
+                        <button class="browse-btn" id="browseFolder">Browse</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Long-term Goals -->
+        <div class="settings-section">
+            <h2>Long-term Goals</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Hide Today's Progress</span>
+                    <span class="setting-description">Hide the progress bar on homepage</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hideTodayProgress">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Disable Long-term Goal Prompting</span>
+                    <span class="setting-description">Don't ask to set up long-term goals on startup</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="disableLongTermGoals">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Appearance & Interface -->
+        <div class="settings-section">
+            <h2>Appearance & Interface</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Theme</span>
+                    <span class="setting-description">Choose your preferred color scheme</span>
+                </div>
+                <div class="setting-control">
+                    <div class="theme-selector">
+                        <div class="theme-option">
+                            <input type="radio" name="theme" id="themeLight" value="light">
+                            <label for="themeLight">
+                                <div class="theme-icon theme-light">☀️</div>
+                                <span class="theme-name">Light</span>
+                            </label>
+                        </div>
+                        <div class="theme-option">
+                            <input type="radio" name="theme" id="themeDark" value="dark" checked>
+                            <label for="themeDark">
+                                <div class="theme-icon theme-dark">🌙</div>
+                                <span class="theme-name">Dark</span>
+                            </label>
+                        </div>
+                        <div class="theme-option">
+                            <input type="radio" name="theme" id="themeCustom" value="custom">
+                            <label for="themeCustom">
+                                <div class="theme-icon theme-custom">🎨</div>
+                                <span class="theme-name">Custom</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Custom Theme Panel -->
+            <div class="custom-theme-panel" id="customThemePanel">
+                <h3 style="color: var(--color-accent); margin-bottom: 1rem;">Customize Your Theme</h3>
+                
+                <!-- Preset Theme Options -->
+                <div class="preset-themes" style="margin-bottom: 2rem;">
+                    <h4 style="color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">Start from a preset:</h4>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button class="preset-btn" data-preset="dark" style="
+                            padding: 0.5rem 1rem;
+                            background: var(--color-bg-tertiary);
+                            border: 1px solid var(--color-border);
+                            color: var(--color-text-primary);
+                            border-radius: 6px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            font-size: 0.85rem;
+                        ">Dark</button>
+                        <button class="preset-btn" data-preset="light" style="
+                            padding: 0.5rem 1rem;
+                            background: var(--color-bg-tertiary);
+                            border: 1px solid var(--color-border);
+                            color: var(--color-text-primary);
+                            border-radius: 6px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            font-size: 0.85rem;
+                        ">Light</button>
+                        <button class="preset-btn" data-preset="midnight" style="
+                            padding: 0.5rem 1rem;
+                            background: var(--color-bg-tertiary);
+                            border: 1px solid var(--color-border);
+                            color: var(--color-text-primary);
+                            border-radius: 6px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            font-size: 0.85rem;
+                        ">Midnight</button>
+                        <button class="preset-btn" data-preset="forest" style="
+                            padding: 0.5rem 1rem;
+                            background: var(--color-bg-tertiary);
+                            border: 1px solid var(--color-border);
+                            color: var(--color-text-primary);
+                            border-radius: 6px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            font-size: 0.85rem;
+                        ">Forest</button>
+                        <button class="preset-btn" data-preset="sepia" style="
+                            padding: 0.5rem 1rem;
+                            background: var(--color-bg-tertiary);
+                            border: 1px solid var(--color-border);
+                            color: var(--color-text-primary);
+                            border-radius: 6px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            font-size: 0.85rem;
+                        ">Sepia</button>
+                    </div>
+                </div>
+                
+                <!-- Color customization -->
+                <h4 style="color: var(--color-text-secondary); font-size: 0.95rem; margin-bottom: 1rem;">Or customize colors:</h4>
+                <div class="color-grid">
+                    <div class="color-item">
+                        <span class="color-label">Background</span>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="bgColor" value="#0d0d0d">
+                            <span class="color-value">#0d0d0d</span>
+                        </div>
+                    </div>
+                    <div class="color-item">
+                        <span class="color-label">Text</span>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="textColor" value="#ffffff">
+                            <span class="color-value">#ffffff</span>
+                        </div>
+                    </div>
+                    <div class="color-item">
+                        <span class="color-label">Accent</span>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="accentColor" value="#14b8a6">
+                            <span class="color-value">#14b8a6</span>
+                        </div>
+                    </div>
+                    <div class="color-item">
+                        <span class="color-label">Card Background</span>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="cardColor" value="#252525">
+                            <span class="color-value">#252525</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Hide Statistics Page</span>
+                    <span class="setting-description">Remove Statistics from navigation menu</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hideStatsPage">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Hide Homepage Stats Sidebar</span>
+                    <span class="setting-description">Hide the right sidebar showing previous sessions</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hideStatsSidebar">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Editor Customization -->
+        <div class="settings-section">
+            <h2>Editor Customization</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Hide Timer</span>
+                    <span class="setting-description">Don't show remaining time during writing</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hideTimer">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Hide Word Count</span>
+                    <span class="setting-description">Don't show word count during writing</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hideWordCount">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Font Size</span>
+                    <span class="setting-description">Size of text in the editor</span>
+                </div>
+                <div class="setting-control">
+                    <div class="range-wrapper">
+                        <input type="range" id="fontSize" min="14" max="24" value="18">
+                        <span class="range-value" id="fontSizeValue">18px</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Font Family</span>
+                    <span class="setting-description">Typeface for your writing</span>
+                </div>
+                <div class="setting-control">
+                    <div class="select-wrapper">
+                        <select class="setting-select" id="fontFamily">
+                            <option value="Georgia">Georgia (Serif)</option>
+                            <option value="Arial">Arial (Sans-serif)</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Courier New">Courier New (Mono)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Typewriter Sounds</span>
+                    <span class="setting-description">Play keyboard sounds while typing</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="typewriterSound">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Auto Fullscreen</span>
+                    <span class="setting-description">Enter fullscreen when writing session starts</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="autoFullscreen">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Disable Exiting Until Sprint is Reached</span>
+                    <span class="setting-description">Prevent exiting before reaching your writing goal</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="lockExit" checked>
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Gamification -->
+        <div class="settings-section">
+            <h2>Gamification & Writing Modes</h2>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Writing Mode</span>
+                    <span class="setting-description">Choose how the app motivates you</span>
+                </div>
+            </div>
+            
+            <div class="mode-selector">
+                <div class="mode-option">
+                    <input type="radio" name="writingMode" id="modeFocus" value="focus" checked>
+                    <label for="modeFocus">
+                        <div class="mode-icon">🎯</div>
+                        <span class="mode-name">Focus Mode</span>
+                    </label>
+                </div>
+                <div class="mode-option">
+                    <input type="radio" name="writingMode" id="modeReward" value="reward">
+                    <label for="modeReward">
+                        <div class="mode-icon">🎁</div>
+                        <span class="mode-name">Reward Mode</span>
+                    </label>
+                </div>
+                <div class="mode-option">
+                    <input type="radio" name="writingMode" id="modePunishment" value="punishment">
+                    <label for="modePunishment">
+                        <div class="mode-icon">⚡</div>
+                        <span class="mode-name">Punishment Mode</span>
+                    </label>
+                </div>
+            </div>
+            
+            <!-- Focus Mode Config -->
+            <div class="mode-config" id="focusConfig">
+                <p style="color: var(--color-text-muted); font-size: 0.9rem;">No rewards or punishments. Just you and your writing.</p>
+            </div>
+            
+            <!-- Reward Mode Config -->
+            <div class="mode-config" id="rewardConfig">
+                <div class="config-group">
+                    <span class="config-label">Reward every:</span>
+                    <input type="number" class="number-input" id="rewardWords" value="100" min="10" max="1000">
+                    <span style="color: var(--color-text-muted);">words</span>
+                </div>
+                <div class="config-group">
+                    <span class="config-label">Reward type:</span>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="rewardType" value="sound" checked>
+                            Satisfying sound
+                        </label>
+                        <label>
+                            <input type="radio" name="rewardType" value="image">
+                            Pretty image
+                        </label>
+                    </div>
+                    <a class="folder-link" id="openRewardFolder">📁 Open rewards folder to customize images</a>
+                </div>
+            </div>
+            
+            <!-- Punishment Mode Config -->
+            <div class="mode-config" id="punishmentConfig">
+                <div class="config-group">
+                    <span class="config-label">Grace period:</span>
+                    <input type="number" class="number-input" id="gracePeriod" value="10" min="5" max="60">
+                    <span style="color: var(--color-text-muted);">seconds of inactivity</span>
+                </div>
+                <div class="config-group">
+                    <span class="config-label">Punishment type:</span>
+                    <div class="radio-group">
+                        <label>
+                            <input type="radio" name="punishType" value="sound" checked>
+                            Annoying sounds
+                        </label>
+                        <label>
+                            <input type="radio" name="punishType" value="red">
+                            Screen turns red
+                        </label>
+                        <label>
+                            <input type="radio" name="punishType" value="kamikaze">
+                            Kamikaze mode
+                        </label>
+                    </div>
+                    <div class="warning-text" id="kamikazeWarning" style="display: none;">
+                        ⚠️ Kamikaze mode will DELETE words from the beginning of your document if you stop writing! Use with extreme caution.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Hardcore Mode</span>
+                    <span class="setting-description">Disable backspace, delete, and text selection</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="hardcoreMode">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Disable Streak Tracking</span>
+                    <span class="setting-description">Don't track consecutive writing days</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="disableStreak">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Disable Achievements</span>
+                    <span class="setting-description">Hide achievement system and notifications</span>
+                </div>
+                <div class="setting-control">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="disableAchievements">
+                        <span class="toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Save Button -->
+        <div class="save-section">
+            <button class="save-button" id="saveSettings">Save Settings</button>
+            <div class="save-message" id="saveMessage">Settings saved successfully!</div>
+        </div>
+    </div>
+
+
+    <!-- Long-term Goal Setup Modal -->
+    <div class="goal-overlay" id="goalOverlay" style="display: none;">
+    <div class="goal-modal">
+        <button class="modal-close" id="modalClose">×</button>
+        <h2>Set a Long-Term Writing Goal?</h2>
+        <p>Track your progress towards a larger writing project!</p>
+        
+        <div class="goal-inputs">
+        <div class="inputs-row">
+            <div class="input-group">
+            <label>Total words:</label>
+            <input type="number" id="goalTotalWords" value="50000" min="1000" max="1000000">
+            </div>
+            <div class="input-group">
+            <label>Days:</label>
+            <input type="number" id="goalTotalDays" value="30" min="1" max="365">
+            </div>
+        </div>
+        <div class="goal-calculation">
+            <span id="wordsPerDay">1,667 words per day</span>
+        </div>
+        </div>
+        
+        <div class="goal-buttons">
+        <button class="goal-btn primary" id="startGoalBtn">Start my goal!</button>
+        <button class="goal-btn tertiary" id="disableGoalBtn">Not now</button>
+        </div>
+        
+        <p style="color: var(--color-text-muted); font-size: 0.8rem; margin-top: 1rem; margin-bottom: 0;">
+        Note: Long-term goal tracking can be re-enabled anytime in Settings
+        </p>
+    </div>
+    </div>
+
+<script>
+    const { ipcRenderer } = require('electron');
+    
+    // Add this function definition first
+    function updateTodayProgressState() {
+        const disableLongTermGoals = document.getElementById('disableLongTermGoals');
+        const hideTodayProgressToggle = document.getElementById('hideTodayProgress');
+        const hideTodayProgressParent = hideTodayProgressToggle.closest('.setting-item');
+        const toggleSlider = hideTodayProgressToggle.nextElementSibling; // The .toggle-slider element
+        
+        if (disableLongTermGoals && hideTodayProgressToggle && hideTodayProgressParent) {
+            if (disableLongTermGoals.checked) {
+                hideTodayProgressToggle.checked = true;
+                hideTodayProgressToggle.disabled = true;
+                hideTodayProgressParent.style.opacity = '0.5';
+                hideTodayProgressParent.style.cursor = 'not-allowed';
+                hideTodayProgressParent.title = 'This setting is disabled because long-term goal prompting is turned off';
+                
+                // Grey out the toggle slider
+                if (toggleSlider) {
+                    toggleSlider.classList.add('disabled');
+                    toggleSlider.style.pointerEvents = 'none';
+                }
+            } else {
+                hideTodayProgressToggle.disabled = false;
+                hideTodayProgressParent.style.opacity = '1';
+                hideTodayProgressParent.style.cursor = 'default';
+                hideTodayProgressParent.title = '';
+                
+                // Restore the toggle slider
+                if (toggleSlider) {
+                    toggleSlider.classList.remove('disabled');
+                    toggleSlider.style.pointerEvents = 'auto';
+                }
+            }
+        }
+    }
+
+    // Long-term goals modal functionality
+    function updateWordsPerDay() {
+        const totalWords = parseInt(document.getElementById('goalTotalWords').value);
+        const totalDays = parseInt(document.getElementById('goalTotalDays').value);
+        const wordsPerDay = Math.ceil(totalWords / totalDays);
+        document.getElementById('wordsPerDay').textContent = `${wordsPerDay.toLocaleString()} words per day`;
+    }
+
+    function showModal() {
+        const overlay = document.getElementById('goalOverlay');
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '0';
+        overlay.querySelector('.goal-modal').style.transform = 'scale(0.7) translateY(-50px)';
+
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+            overlay.querySelector('.goal-modal').style.transform = 'scale(1) translateY(0)';
+        }, 150);
+    }
+
+    function hideModal() {
+        const overlay = document.getElementById('goalOverlay');
+        overlay.style.opacity = '0';
+        overlay.querySelector('.goal-modal').style.transform = 'scale(0.7) translateY(-50px)';
+
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 500);
+    }
+    
+    // Theme selector
+    document.querySelectorAll('input[name="theme"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const customPanel = document.getElementById('customThemePanel');
+            if (e.target.value === 'custom') {
+                customPanel.classList.add('active');
+                // Apply custom theme if it exists
+                if (window.themeManager) {
+                    const colors = {
+                        background: document.getElementById('bgColor').value,
+                        text: document.getElementById('textColor').value,
+                        accent: document.getElementById('accentColor').value,
+                        card: document.getElementById('cardColor').value
+                    };
+                    window.themeManager.applyCustomTheme(colors);
+                }
+            } else {
+                customPanel.classList.remove('active');
+                // Apply selected preset theme
+                if (window.themeManager && window.themeManager.themes[e.target.value]) {
+                    window.themeManager.applyTheme(e.target.value);
+                }
+            }
+        });
+    });
+    
+    // Writing mode selector
+    document.querySelectorAll('input[name="writingMode"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            // Hide all configs
+            document.querySelectorAll('.mode-config').forEach(config => {
+                config.classList.remove('active');
+            });
+            
+            // Show selected config
+            if (e.target.value === 'focus') {
+                document.getElementById('focusConfig').classList.add('active');
+            } else if (e.target.value === 'reward') {
+                document.getElementById('rewardConfig').classList.add('active');
+            } else if (e.target.value === 'punishment') {
+                document.getElementById('punishmentConfig').classList.add('active');
+            }
+        });
+    });
+
+    // Show/hide kamikaze warning
+    document.querySelectorAll('input[name="punishType"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            const warning = document.getElementById('kamikazeWarning');
+            if (e.target.value === 'kamikaze') {
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        });
+    });
+
+    // Color picker interactions
+    document.querySelectorAll('input[type="color"]').forEach(picker => {
+        picker.addEventListener('input', (e) => {
+            const valueSpan = e.target.parentElement.querySelector('.color-value');
+            if (valueSpan) {
+                valueSpan.textContent = e.target.value;
+            }
+            
+            // Apply custom theme in real-time if custom is selected
+            if (document.getElementById('themeCustom').checked && window.themeManager) {
+                const colors = {
+                    background: document.getElementById('bgColor').value,
+                    text: document.getElementById('textColor').value,
+                    accent: document.getElementById('accentColor').value,
+                    card: document.getElementById('cardColor').value
+                };
+                window.themeManager.applyCustomTheme(colors);
+            }
+        });
+    });
+
+    // Font size slider
+    document.getElementById('fontSize').addEventListener('input', function() {
+        document.getElementById('fontSizeValue').textContent = this.value + 'px';
+    });
+
+    // Browse folder button
+    document.getElementById('browseFolder').addEventListener('click', () => {
+        ipcRenderer.send('select-folder');
+    });
+
+    ipcRenderer.on('folder-selected', (event, folderPath) => {
+        document.getElementById('currentPath').textContent = folderPath;
+    });
+
+    // Open rewards folder
+    document.getElementById('openRewardFolder').addEventListener('click', () => {
+        ipcRenderer.send('open-rewards-folder');
+    });
+
+    // Long-term goals interdependency handler
+    document.getElementById('disableLongTermGoals').addEventListener('change', function() {
+        updateTodayProgressState();
+        
+        // If toggling FROM disabled TO enabled, show modal and re-enable prompting
+        if (!this.checked) {
+            ipcRenderer.send('enable-goal-prompting');
+            showModal();
+        }
+    });
+
+    // Long-term goals modal event listeners
+    document.getElementById('goalTotalWords').addEventListener('input', updateWordsPerDay);
+    document.getElementById('goalTotalDays').addEventListener('input', updateWordsPerDay);
+
+    document.getElementById('startGoalBtn').addEventListener('click', () => {
+        const totalWords = parseInt(document.getElementById('goalTotalWords').value);
+        const totalDays = parseInt(document.getElementById('goalTotalDays').value);
+        
+        ipcRenderer.send('set-long-term-goal', {
+            enabled: true,
+            totalWords: totalWords,
+            totalDays: totalDays,
+            startDate: new Date().toISOString()
+        });
+        
+        hideModal();
+    });
+
+    document.getElementById('disableGoalBtn').addEventListener('click', () => {
+        // Update the UI immediately
+        document.getElementById('disableLongTermGoals').checked = true;
+        updateTodayProgressState();
+        
+        // Send to backend and auto-save
+        ipcRenderer.send('disable-goal-prompting');
+        
+        // Auto-save the settings
+        const editorSettings = {
+            fontSize: parseInt(document.getElementById('fontSize').value),
+            fontFamily: document.getElementById('fontFamily').value,
+            typewriterSound: document.getElementById('typewriterSound').checked,
+            hardcoreMode: document.getElementById('hardcoreMode').checked,
+            autoFullscreen: document.getElementById('autoFullscreen').checked,
+            hideTimer: document.getElementById('hideTimer').checked,
+            hideWordCount: document.getElementById('hideWordCount').checked,
+            lockExit: document.getElementById('lockExit').checked
+        };
+        
+        const appearanceSettings = {
+            theme: document.querySelector('input[name="theme"]:checked').value,
+            customColors: {
+                background: document.getElementById('bgColor').value,
+                text: document.getElementById('textColor').value,
+                accent: document.getElementById('accentColor').value,
+                card: document.getElementById('cardColor').value
+            },
+            hideStatsPage: document.getElementById('hideStatsPage').checked,
+            hideStatsSidebar: document.getElementById('hideStatsSidebar').checked,
+            hideTodayProgress: document.getElementById('hideTodayProgress').checked
+        };
+        
+        const gamificationSettings = {
+            mode: document.querySelector('input[name="writingMode"]:checked').value,
+            rewardWords: parseInt(document.getElementById('rewardWords').value),
+            rewardType: document.querySelector('input[name="rewardType"]:checked').value,
+            gracePeriod: parseInt(document.getElementById('gracePeriod').value),
+            punishType: document.querySelector('input[name="punishType"]:checked').value,
+            disableStreak: document.getElementById('disableStreak').checked,
+            disableAchievements: document.getElementById('disableAchievements').checked
+        };
+
+        const longTermGoalsSettings = {
+            disablePrompting: true // Now disabled
+        };
+        
+        ipcRenderer.send('save-all-settings', {
+            editorSettings,
+            appearanceSettings,
+            gamificationSettings,
+            longTermGoalsSettings
+        });
+        
+        hideModal();
+    });
+
+    // Close button handler
+    document.getElementById('goalOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'goalOverlay') {
+            ipcRenderer.send('disable-goal-prompting');
+            hideModal();
+        }
+    });
+
+    // Overlay click handler
+    document.getElementById('goalOverlay').addEventListener('click', (e) => {
+        if (e.target.id === 'goalOverlay') {
+            ipcRenderer.send('disable-goal-prompting');
+            hideModal();
+        }
+    });
+
+    // Load current settings
+    ipcRenderer.send('get-settings');
+
+    ipcRenderer.on('load-settings', (event, settings) => {
+        console.log('Loading settings:', settings);
+        
+        // Set document path
+        if (settings.documentsFolder) {
+            document.getElementById('currentPath').textContent = settings.documentsFolder;
+        }
+
+        // Load long-term goals settings
+        if (settings.longTermGoals) {
+            document.getElementById('disableLongTermGoals').checked = settings.longTermGoals.disablePrompting || false;
+        }
+        
+        // Load editor settings if they exist
+        if (settings.editorSettings) {
+            document.getElementById('fontSize').value = settings.editorSettings.fontSize || 18;
+            document.getElementById('fontSizeValue').textContent = (settings.editorSettings.fontSize || 18) + 'px';
+            document.getElementById('fontFamily').value = settings.editorSettings.fontFamily || 'Georgia';
+            document.getElementById('typewriterSound').checked = settings.editorSettings.typewriterSound || false;
+            document.getElementById('hardcoreMode').checked = settings.editorSettings.hardcoreMode || false;
+            document.getElementById('autoFullscreen').checked = settings.editorSettings.autoFullscreen || false;
+            document.getElementById('hideTimer').checked = settings.editorSettings.hideTimer || false;
+            document.getElementById('hideWordCount').checked = settings.editorSettings.hideWordCount || false;
+            document.getElementById('lockExit').checked = settings.editorSettings?.lockExit !== false; // Default true
+        }
+        
+        // Load appearance settings
+        if (settings.appearanceSettings) {
+            const theme = settings.appearanceSettings.theme || 'dark';
+            document.getElementById('theme' + theme.charAt(0).toUpperCase() + theme.slice(1)).checked = true;
+            
+            if (theme === 'custom' && settings.appearanceSettings.customColors) {
+                document.getElementById('customThemePanel').classList.add('active');
+                document.getElementById('bgColor').value = settings.appearanceSettings.customColors.background || '#1a1a1a';
+                document.getElementById('textColor').value = settings.appearanceSettings.customColors.text || '#e0e0e0';
+                document.getElementById('accentColor').value = settings.appearanceSettings.customColors.accent || '#14b8a6';
+                document.getElementById('cardColor').value = settings.appearanceSettings.customColors.card || '#252525';
+                
+                // Update color value displays
+                document.querySelector('#bgColor + .color-value').textContent = settings.appearanceSettings.customColors.background || '#1a1a1a';
+                document.querySelector('#textColor + .color-value').textContent = settings.appearanceSettings.customColors.text || '#e0e0e0';
+                document.querySelector('#accentColor + .color-value').textContent = settings.appearanceSettings.customColors.accent || '#14b8a6';
+                document.querySelector('#cardColor + .color-value').textContent = settings.appearanceSettings.customColors.card || '#252525';
+            }
+            
+            document.getElementById('hideStatsPage').checked = settings.appearanceSettings.hideStatsPage || false;
+            document.getElementById('hideStatsSidebar').checked = settings.appearanceSettings.hideStatsSidebar || false;
+            document.getElementById('hideTodayProgress').checked = settings.appearanceSettings.hideTodayProgress || false;
+        }
+        
+        // Load gamification settings
+        if (settings.gamificationSettings) {
+            const mode = settings.gamificationSettings.mode || 'focus';
+            document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).checked = true;
+            document.getElementById(mode + 'Config').classList.add('active');
+            
+            document.getElementById('rewardWords').value = settings.gamificationSettings.rewardWords || 100;
+            document.getElementById('gracePeriod').value = settings.gamificationSettings.gracePeriod || 10;
+            
+            if (settings.gamificationSettings.rewardType) {
+                document.querySelector(`input[name="rewardType"][value="${settings.gamificationSettings.rewardType}"]`).checked = true;
+            }
+            
+            if (settings.gamificationSettings.punishType) {
+                document.querySelector(`input[name="punishType"][value="${settings.gamificationSettings.punishType}"]`).checked = true;
+                if (settings.gamificationSettings.punishType === 'kamikaze') {
+                    document.getElementById('kamikazeWarning').style.display = 'block';
+                }
+            }
+            
+            document.getElementById('disableStreak').checked = settings.gamificationSettings.disableStreak || false;
+            document.getElementById('disableAchievements').checked = settings.gamificationSettings.disableAchievements || false;
+        }
+
+        updateTodayProgressState();
+    });
+
+    // Save settings
+    document.getElementById('saveSettings').addEventListener('click', () => {
+        const editorSettings = {
+            fontSize: parseInt(document.getElementById('fontSize').value),
+            fontFamily: document.getElementById('fontFamily').value,
+            typewriterSound: document.getElementById('typewriterSound').checked,
+            hardcoreMode: document.getElementById('hardcoreMode').checked,
+            autoFullscreen: document.getElementById('autoFullscreen').checked,
+            hideTimer: document.getElementById('hideTimer').checked,
+            hideWordCount: document.getElementById('hideWordCount').checked,
+            lockExit: document.getElementById('lockExit').checked
+        };
+        
+        const appearanceSettings = {
+            theme: document.querySelector('input[name="theme"]:checked').value,
+            customColors: {
+                background: document.getElementById('bgColor').value,
+                text: document.getElementById('textColor').value,
+                accent: document.getElementById('accentColor').value,
+                card: document.getElementById('cardColor').value
+            },
+            hideStatsPage: document.getElementById('hideStatsPage').checked,
+            hideStatsSidebar: document.getElementById('hideStatsSidebar').checked,
+            hideTodayProgress: document.getElementById('hideTodayProgress').checked
+        };
+        
+        const gamificationSettings = {
+            mode: document.querySelector('input[name="writingMode"]:checked').value,
+            rewardWords: parseInt(document.getElementById('rewardWords').value),
+            rewardType: document.querySelector('input[name="rewardType"]:checked').value,
+            gracePeriod: parseInt(document.getElementById('gracePeriod').value),
+            punishType: document.querySelector('input[name="punishType"]:checked').value,
+            disableStreak: document.getElementById('disableStreak').checked,
+            disableAchievements: document.getElementById('disableAchievements').checked
+        };
+
+        const longTermGoalsSettings = {
+            disablePrompting: document.getElementById('disableLongTermGoals').checked
+        };
+        
+        console.log('Saving theme:', appearanceSettings.theme);
+        
+        ipcRenderer.send('save-all-settings', {
+            editorSettings,
+            appearanceSettings,
+            gamificationSettings,
+            longTermGoalsSettings
+        });
+        
+        // Show save message
+        const saveMessage = document.getElementById('saveMessage');
+        saveMessage.classList.add('show');
+        setTimeout(() => {
+            saveMessage.classList.remove('show');
+        }, 3000);
+    });
+
+    // Fullscreen toggle
+    document.getElementById('fullscreenToggle').addEventListener('click', () => {
+        ipcRenderer.send('toggle-fullscreen');
+    });
+
+    ipcRenderer.on('fullscreen-changed', (event, isFullscreen) => {
+        const btn = document.getElementById('fullscreenToggle');
+        if (isFullscreen) {
+            btn.title = 'Exit Fullscreen';
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                </svg>`;
+        } else {
+            btn.title = 'Enter Fullscreen';
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>`;
+        }
+    });
+
+    // Preset theme buttons functionality
+    const presetThemes = {
+        dark: {
+            background: '#0d0d0d',
+            text: '#ffffff',
+            accent: '#14b8a6',
+            card: '#252525'
+        },
+        light: {
+            background: '#ffffff',
+            text: '#1a1a1a',
+            accent: '#14b8a6',
+            card: '#f5f5f5'
+        },
+        midnight: {
+            background: '#0f0f23',
+            text: '#e0e0ff',
+            accent: '#7c3aed',
+            card: '#1a1a35'
+        },
+        forest: {
+            background: '#6ab486',
+            text: '#e0f0e0',
+            accent: '#ca9381',
+            card: '#2e5642'
+        },
+        sepia: {
+            background: '#f4f1ea',
+            text: '#3e2f1f',
+            accent: '#b8860b',
+            card: '#e8e2d5'
+        }
+    };
+
+    // Handle preset button clicks
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const preset = e.target.dataset.preset;
+            if (presetThemes[preset]) {
+                // Update color pickers
+                document.getElementById('bgColor').value = presetThemes[preset].background;
+                document.getElementById('textColor').value = presetThemes[preset].text;
+                document.getElementById('accentColor').value = presetThemes[preset].accent;
+                document.getElementById('cardColor').value = presetThemes[preset].card;
+                
+                // Update color value displays
+                document.querySelector('#bgColor + .color-value').textContent = presetThemes[preset].background;
+                document.querySelector('#textColor + .color-value').textContent = presetThemes[preset].text;
+                document.querySelector('#accentColor + .color-value').textContent = presetThemes[preset].accent;
+                document.querySelector('#cardColor + .color-value').textContent = presetThemes[preset].card;
+                
+                // Apply theme immediately
+                if (window.themeManager) {
+                    window.themeManager.applyCustomTheme(presetThemes[preset]);
+                }
+                
+                // Update active button
+                document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+            }
+        });
+    });
+
+    // Show focus mode config by default
+    document.getElementById('focusConfig').classList.add('active');
+</script>
+
+   <script src="visibility-controller.js"></script>
+   <script src="theme-manager.js"></script>
+</body>
+</html>

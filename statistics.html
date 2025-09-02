@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Statistics - Focus Writer</title>
+    <link rel="stylesheet" href="style.css">
+<style>
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--color-bg-primary);
+    color: var(--color-text-primary);
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    height: 60px !important;
+    padding: 0 2rem !important;
+}
+
+.optionsnav {
+    height: 100%;
+}
+
+.stats-container {
+    flex: 1;
+    padding: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    color: var(--color-text-primary);
+}
+
+/* Summary Cards */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.summary-card {
+    background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--color-border);
+}
+
+.summary-card.highlight {
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+}
+
+.summary-card.highlight .card-label {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.summary-card.highlight .card-value {
+    color: #fff;
+}
+
+.card-icon {
+    width: 40px;
+    height: 40px;
+    background: var(--color-accent-muted);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+}
+
+.card-label {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--color-text-primary);
+}
+
+.card-subtext {
+    font-size: 0.85rem;
+    color: var(--color-text-faint);
+    margin-top: 0.5rem;
+}
+
+/* Charts Section */
+.charts-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+    margin-bottom: 3rem;
+}
+
+.chart-card {
+    background: var(--color-bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.chart-title {
+    font-size: 1.25rem;
+    color: var(--color-text-primary);
+}
+
+.chart-period {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.period-btn {
+    padding: 0.25rem 0.75rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.period-btn.active {
+    background: var(--color-accent);
+    color: #000;
+    border-color: var(--color-accent);
+}
+
+.period-btn:hover:not(.active) {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+/* Chart Container */
+.chart-placeholder {
+    height: 250px;
+    background: var(--color-bg-tertiary);
+    border-radius: 8px;
+    display: flex;
+    align-items: flex-end;
+    padding: 1rem 1rem 3rem 1rem;
+    gap: 0.5rem;
+    position: relative;
+    overflow: visible;
+}
+
+/* Chart Bars */
+.chart-bar {
+    flex: 1;
+    background: linear-gradient(to top, var(--color-accent), var(--color-accent-hover));
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    opacity: 0.8;
+    min-height: 3px;
+    transform-origin: bottom;
+    transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.chart-bar.zero {
+    background: var(--color-border);
+}
+
+.chart-bar:hover {
+    opacity: 1;
+}
+
+.chart-bar::after {
+    content: attr(data-label);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--color-text-faint);
+    font-size: 0.7rem;
+    white-space: nowrap;
+    margin-top: 5px;
+}
+
+.chart-bar::before {
+    content: attr(data-value) " words";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    z-index: 10;
+    margin-bottom: 5px;
+}
+
+.chart-bar:hover::before {
+    opacity: 1;
+}
+
+/* Recent Sessions */
+.sessions-section {
+    background: var(--color-bg-secondary);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}
+
+.section-header {
+    font-size: 1.25rem;
+    color: var(--color-text-primary);
+    margin-bottom: 1.5rem;
+}
+
+.sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.session-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 1rem;
+    background: var(--color-bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    transition: all 0.3s;
+}
+
+.session-item:hover {
+    border-color: var(--color-accent);
+    transform: translateX(4px);
+}
+
+.session-date {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+    min-width: 100px;
+}
+
+.session-file {
+    color: var(--color-text-primary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-mode {
+    padding: 0.25rem 0.75rem;
+    background: var(--color-accent-muted);
+    color: var(--color-accent);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.session-words {
+    color: var(--color-accent);
+    font-weight: 600;
+}
+
+/* Achievements */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.achievement {
+    background: var(--color-bg-tertiary);
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    border: 2px solid var(--color-border);
+    transition: all 0.3s;
+}
+
+.achievement.unlocked {
+    border-color: var(--color-accent);
+    background: var(--color-accent-muted);
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.achievement-name {
+    font-size: 0.85rem;
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+}
+
+.achievement-desc {
+    font-size: 0.75rem;
+    color: var(--color-text-faint);
+}
+
+.achievement.unlocked .achievement-desc {
+    color: var(--color-accent);
+}
+
+/* Calendar */
+.calendar-nav {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.calendar-btn {
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.calendar-btn:hover:not(:disabled) {
+    background: var(--color-bg-tertiary);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+.calendar-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.calendar-month {
+    font-weight: 600;
+    color: var(--color-text-primary);
+    min-width: 120px;
+    text-align: center;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.25rem;
+    padding: 0.5rem;
+}
+
+.calendar-header {
+    font-weight: 600;
+    color: var(--color-text-muted);
+    font-size: 0.7rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 20px;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    background: var(--color-bg-tertiary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 0.8rem;
+    color: var(--color-text-faint);
+    width: 32px;
+    height: 32px;
+    margin: 0 auto;
+}
+
+.calendar-day.wrote {
+    background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+    color: #fff;
+    font-weight: 600;
+}
+
+.calendar-day.wrote::after {
+    content: '✓';
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    background: var(--color-accent);
+    color: #000;
+    border-radius: 50%;
+    width: 14px;
+    height: 14px;
+    font-size: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    border: 2px solid var(--color-bg-secondary);
+}
+</style>
+</head>
+<body>
+    <header>
+        <div class="optionsnav">
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="files.html">Files</a></li>
+                <li>Statistics</li>
+                <li><a href="settings.html">Settings</a></li>
+            </ul>
+            <button class="fullscreen-btn" id="fullscreenToggle" title="Toggle Fullscreen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+    
+    <div class="stats-container">
+        <h1>Your Writing Statistics</h1>
+        
+        <!-- Summary Cards -->
+        <div class="summary-grid">
+            <div class="summary-card highlight">
+                <div class="card-icon">🔥</div>
+                <div class="card-label">Current Streak</div>
+                <div class="card-value">7</div>
+                <div class="card-subtext">days in a row</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">📝</div>
+                <div class="card-label">Total Words</div>
+                <div class="card-value">12,847</div>
+                <div class="card-subtext">All time</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">📅</div>
+                <div class="card-label">Sessions</div>
+                <div class="card-value">34</div>
+                <div class="card-subtext">This month</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">⏱️</div>
+                <div class="card-label">Writing Time</div>
+                <div class="card-value">14.5</div>
+                <div class="card-subtext">hours this week</div>
+            </div>
+        </div>
+        
+        <!-- Charts -->
+        <div class="charts-section">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Words Written</h3>
+                    <div class="chart-period">
+                        <button class="period-btn active">Week</button>
+                        <button class="period-btn">Month</button>
+                        <button class="period-btn">Year</button>
+                    </div>
+                </div>
+                <div class="chart-placeholder">
+                    <div class="fade-overlay"></div>
+                    <div class="chart-bar" style="height: 60%" data-value="450"></div>
+                    <div class="chart-bar" style="height: 80%" data-value="680"></div>
+                    <div class="chart-bar" style="height: 45%" data-value="320"></div>
+                    <div class="chart-bar" style="height: 90%" data-value="890"></div>
+                    <div class="chart-bar" style="height: 70%" data-value="567"></div>
+                    <div class="chart-bar" style="height: 85%" data-value="723"></div>
+                    <div class="chart-bar" style="height: 95%" data-value="945"></div>
+                </div>
+            </div>
+            
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h3 class="chart-title">Writing Calendar</h3>
+                    <div class="calendar-nav">
+                        <button class="calendar-btn" id="prevMonth">&lt;</button>
+                        <span class="calendar-month" id="currentMonth">January 2024</span>
+                        <button class="calendar-btn" id="nextMonth">&gt;</button>
+                    </div>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Sessions -->
+        <div class="sessions-section">
+            <h3 class="section-header">Recent Sessions</h3>
+            <div class="sessions-list">
+                <div class="session-item">
+                    <span class="session-date">Today, 2:30 PM</span>
+                    <span class="session-file">focuswriter-2024-01-15-afternoon</span>
+                    <span class="session-mode">Timer</span>
+                    <span class="session-words">945 words</span>
+                </div>
+                <div class="session-item">
+                    <span class="session-date">Today, 9:15 AM</span>
+                    <span class="session-file">focuswriter-2024-01-15-morning</span>
+                    <span class="session-mode">Word Count</span>
+                    <span class="session-words">523 words</span>
+                </div>
+                <div class="session-item">
+                    <span class="session-date">Yesterday</span>
+                    <span class="session-file">focuswriter-2024-01-14-evening</span>
+                    <span class="session-mode">Timer</span>
+                    <span class="session-words">680 words</span>
+                </div>
+                <div class="session-item">
+                    <span class="session-date">Jan 13</span>
+                    <span class="session-file">focuswriter-2024-01-13-morning</span>
+                    <span class="session-mode">Word Count</span>
+                    <span class="session-words">1,234 words</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Achievements -->
+        <div class="sessions-section" style="margin-top: 2rem;">
+            <h3 class="section-header">Achievements</h3>
+            <div class="achievements-grid">
+                <div class="achievement unlocked">
+                    <div class="achievement-icon">🎯</div>
+                    <div class="achievement-name">First Words</div>
+                    <div class="achievement-desc">Write your first 100 words</div>
+                </div>
+                <div class="achievement unlocked">
+                    <div class="achievement-icon">⚡</div>
+                    <div class="achievement-name">Speed Writer</div>
+                    <div class="achievement-desc">500 words in one session</div>
+                </div>
+                <div class="achievement unlocked">
+                    <div class="achievement-icon">🔥</div>
+                    <div class="achievement-name">On Fire</div>
+                    <div class="achievement-desc">7 day streak</div>
+                </div>
+                <div class="achievement">
+                    <div class="achievement-icon">🏆</div>
+                    <div class="achievement-name">Novelist</div>
+                    <div class="achievement-desc">Write 50,000 words total</div>
+                </div>
+                <div class="achievement">
+                    <div class="achievement-icon">💎</div>
+                    <div class="achievement-name">Dedicated</div>
+                    <div class="achievement-desc">30 day streak</div>
+                </div>
+                <div class="achievement">
+                    <div class="achievement-icon">🌟</div>
+                    <div class="achievement-name">Marathon</div>
+                    <div class="achievement-desc">Write for 2 hours straight</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const { ipcRenderer } = require('electron');
+    
+    // Global variables
+    let currentDailyData = [];
+    let currentCalendarDate = new Date();
+    let writingDays = {};
+    let firstDataDate = null;
+    
+    // Wait for DOM to be ready
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // Fullscreen toggle
+        document.getElementById('fullscreenToggle').addEventListener('click', () => {
+            ipcRenderer.send('toggle-fullscreen');
+        });
+        
+        // Calendar navigation
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+            renderCalendar();
+        });
+        
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+            renderCalendar();
+        });
+        
+        // Period buttons - Set up ONLY ONCE
+        const periodButtons = document.querySelectorAll('.chart-period .period-btn');
+        periodButtons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Skip if already active
+                if (this.classList.contains('active')) return;
+                
+                console.log('Period button clicked:', this.textContent);
+                
+                // Update active state
+                periodButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Redraw chart
+                if (currentDailyData && currentDailyData.length > 0) {
+                    updateWordsChart(currentDailyData);
+                }
+            });
+        });
+        
+        // Request initial data
+        ipcRenderer.send('get-detailed-stats');
+    });
+    
+    function updateWordsChart(dailyData) {
+    const chartContainer = document.querySelector('.chart-placeholder');
+    if(!chartContainer || !dailyData || dailyData.length === 0) return;
+    
+    const activePeriod = document.querySelector('.period-btn.active').textContent;
+    let dataToShow = [];
+    
+    if(activePeriod === 'Week') {
+        // Last 7 days - ensure correct dates
+        dataToShow = dailyData.slice(-7).map(day => {
+            // Parse the date string properly
+            const [year, month, dayNum] = day.date.split('-').map(Number);
+            const properDate = new Date(year, month - 1, dayNum); // month is 0-indexed in JS
+            return {
+                ...day,
+                properDate: properDate
+            };
+        });
+    } else if(activePeriod === 'Month') {
+        // Last 12 months
+        const monthlyData = {};
+        const now = new Date();
+        
+        // Create entries for last 12 months
+        for(let i = 11; i >= 0; i--) {
+            const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            monthlyData[monthKey] = 0;
+        }
+        
+        // Fill in actual data
+        dailyData.forEach(day => {
+            const month = day.date.substring(0, 7);
+            if(monthlyData.hasOwnProperty(month)) {
+                monthlyData[month] += day.words;
+            }
+        });
+        
+        dataToShow = Object.entries(monthlyData).map(([month, words]) => ({
+            date: month,
+            words: words
+        }));
+    } else { // Year view
+        const yearlyData = {};
+        
+        dailyData.forEach(day => {
+            const year = day.date.substring(0, 4);
+            if(!yearlyData[year]) yearlyData[year] = 0;
+            yearlyData[year] += day.words;
+        });
+        
+        dataToShow = Object.entries(yearlyData)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([year, words]) => ({
+                date: year,
+                words: words
+            }));
+    }
+    
+    const maxWords = Math.max(...dataToShow.map(d => d.words), 100);
+    
+    chartContainer.innerHTML = '';
+    
+    dataToShow.forEach((day, index) => {
+        const bar = document.createElement('div');
+        bar.className = day.words === 0 ? 'chart-bar zero' : 'chart-bar';
+        bar.setAttribute('data-value', day.words);
+        
+        const finalHeight = day.words === 0 ? '3px' : `${(day.words / maxWords) * 100}%`;
+        
+        bar.style.height = '0%';
+        bar.style.transition = 'none';
+        
+        // Generate correct labels
+        let labelText = '';
+        if(activePeriod === 'Week') {
+            // Use the properDate we created above
+            const date = day.properDate || new Date(day.date + 'T12:00:00'); // Add noon time to avoid timezone issues
+            labelText = date.toLocaleDateString('en-US', { weekday: 'short' });
+        } else if(activePeriod === 'Month') {
+            const [year, month] = day.date.split('-');
+            const monthDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+            labelText = monthDate.toLocaleDateString('en-US', { month: 'short' });
+        } else { // Year view
+            labelText = day.date;
+        }
+        bar.setAttribute('data-label', labelText);
+        
+        chartContainer.appendChild(bar);
+        
+        bar.offsetHeight;
+        
+        setTimeout(() => {
+            bar.style.transition = `height ${0.6 + index * 0.05}s cubic-bezier(0.4, 0, 0.2, 1)`;
+            bar.style.height = finalHeight;
+        }, 50 + index * 30);
+    });
+}
+    
+    // Calendar render function
+    function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        const year = currentCalendarDate.getFullYear();
+        const month = currentCalendarDate.getMonth();
+        
+        document.getElementById('currentMonth').textContent = currentCalendarDate.toLocaleDateString('en', {
+            month: 'long',
+            year: 'numeric'
+        });
+        
+        grid.innerHTML = '';
+        
+        // Add day headers
+        ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].forEach(day => {
+            const header = document.createElement('div');
+            header.className = 'calendar-header';
+            header.textContent = day;
+            grid.appendChild(header);
+        });
+        
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        
+        // Empty cells before month starts
+        for (let i = 0; i < firstDay.getDay(); i++) {
+            grid.appendChild(document.createElement('div'));
+        }
+        
+        // Days of month
+        for (let day = 1; day <= lastDay.getDate(); day++) {
+            const dayElement = document.createElement('div');
+            dayElement.className = 'calendar-day';
+            dayElement.textContent = day;
+            
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (writingDays[dateStr]) {
+                dayElement.classList.add('wrote');
+            }
+            
+            grid.appendChild(dayElement);
+        }
+        
+        // Update nav buttons
+        const prevBtn = document.getElementById('prevMonth');
+        const nextBtn = document.getElementById('nextMonth');
+        
+        if (firstDataDate) {
+            const firstDate = new Date(firstDataDate);
+            prevBtn.disabled = year === firstDate.getFullYear() && month === firstDate.getMonth();
+        }
+        
+        const now = new Date();
+        nextBtn.disabled = year === now.getFullYear() && month === now.getMonth();
+    }
+    
+    function updateTopSessions(sessions) {
+        const sessionsList = document.querySelector('.sessions-list');
+        if (!sessionsList) return;
+        
+        document.querySelector('.section-header').textContent = 'Top Sessions';
+        
+        if (!sessions || sessions.length === 0) {
+            sessionsList.innerHTML = '<div class="session-item">No sessions yet</div>';
+            return;
+        }
+        
+        sessionsList.innerHTML = sessions.map(session => {
+            const date = new Date(session.time);
+            const dateStr = date.toLocaleDateString();
+            return `
+                <div class="session-item">
+                    <span class="session-date">${dateStr}</span>
+                    <span class="session-file">${session.filename}</span>
+                    <span class="session-mode">${session.mode}</span>
+                    <span class="session-words">${session.newWords} words</span>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    // Fullscreen listener
+    ipcRenderer.on('fullscreen-changed', (event, isFullscreen) => {
+        const btn = document.getElementById('fullscreenToggle');
+        if (isFullscreen) {
+            btn.title = 'Exit Fullscreen';
+            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+            </svg>`;
+        } else {
+            btn.title = 'Enter Fullscreen';
+            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+            </svg>`;
+        }
+    });
+    
+    // Data listener
+    ipcRenderer.on('detailed-stats', (event, data) => {
+        console.log('Stats received:', data);
+        
+        // Store data
+        currentDailyData = data.dailyData || [];
+        
+        // Build writing days map
+        writingDays = {};
+        data.dailyData.forEach(day => {
+            if (day.words > 0) {
+                writingDays[day.date] = true;
+                if (!firstDataDate || new Date(day.date) < new Date(firstDataDate)) {
+                    firstDataDate = day.date;
+                }
+            }
+        });
+        
+        // Update summary cards
+        document.querySelector('.summary-card:nth-child(1) .card-value').textContent = data.streak || 0;
+        document.querySelector('.summary-card:nth-child(2) .card-value').textContent = (data.allTime?.words || 0).toLocaleString();
+        document.querySelector('.summary-card:nth-child(3) .card-value').textContent = data.month?.sessions || 0;
+        document.querySelector('.summary-card:nth-child(4) .card-value').textContent = ((data.week?.minutes || 0) / 60).toFixed(1);
+        
+        // Set calendar to current month (today)
+        currentCalendarDate = new Date();
+        
+        // Update displays
+        updateWordsChart(currentDailyData);
+        renderCalendar();
+        updateTopSessions(data.topSessions);
+    });
+</script>
+<script src="visibility-controller.js"></script>
+<script src="theme-manager.js"></script>
+</body>
+</html>

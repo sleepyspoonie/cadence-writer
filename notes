@@ -1,0 +1,115 @@
+1. When i start a sprint, the word count is being counted from the existing word count now, not from zero. Please fix. Also, when someone starts a new long term sprint, the today's progress should start from 0, not from what you already wrote today. Next, when i finish a long-term goal, freewrite should toggle us to disable long-term goals in settings. Additionally, entering freewrite should also hide the today's progress section. Have the elements underneath slide smoothly up to take its place. If the user starts a new long-term goal, reset the today's progress to 0. Also, the 0/### # days left section is not updating with word count.
+
+
+
+also, there is white flashing when I tab into some of the new pages. Also, there didn't used to be, but there's now also a flash where you can see the stats link before it hides in the nav if you have it disabled. i don't want flashing.
+
+9. We need to set a minimum size for the program that we don't want it shrunk down smaller than.
+
+10. Once that's done, I want to add functionality for long-term goals. Like, a "write this many words by this day" sort of system. So you could put, say, 50k words, 30 days, and the today's progress section of the homepage left aside would tell you how many words were you goal to write today and how far from achieving it. If a long-term goal is not set, this should be hidden. If it is set, it should be visible. the 0/### should be the number of words they need to write today.
+If the user opens the software and there is not a long-term goal set:
+popup asking if they'd like to set one. The popup will have the following:
+A text field for total words they want to write. Default 50,000
+A text field for how many days they want to write it over the course of. Default is 30
+A displayed text that says how many words per day, calculated by dividing total words by total days. This will adjust as they adjust their numbers.
+Below it will have 3 options:
+- Start my goal!
+- Not now
+- Disable long-term goal setting (this can be re-enabled in settings)
+
+If they click "start my goal":
+-"today's progress" tracker will be set to visible in the settings. It should be set to be disabled by default, and greyed out and unusable if the person does not have a long term goal enabled.
+-Today's progress in the left aside in the homepage will have the #/## denominator set to their daily goal. The numerator should be set to total number of words written. The bar should fill up as they get closer to their goal.
+
+If they click "not now" do nothing and prompt them again next time they open the software.
+
+If they click "disable long term goal setting" enable the setting in settings.html that turns off prompting for long-term goals. Also make sure hide today's progress is checked on and greyed out.
+
+We also need to add that setting. Let's rearrange the settings.html file so that "hide today's progress" and "disable long term goal setting" are together under a long-term goals or daily goals card by themselves.
+
+11. Now it's time to circle back around to achievements. We need to be able ot track them. I'd also like to add more. I also think it's important for our file organization to be well-suited to adding more of them n the future. Maybe we keep them in a separate document? I also want to be able to have hidden achievements (one could be pasting words into a document, like a cheeky little one that catches you "cheating"). On the statistics page, go ahead and show all the achievements they already have unlocked but include a little text wtih a > arrow to click through to see all ### locked achievements. All hidden achievements should be shown as a hidden achievement for which the task is hidden.
+
+12. Hide achievements should disable achievements turning on and off. It should also hide them from the statistics page altogether.
+
+13. implement reward mode, kamikaze mode, punishment mode
+
+14. some cool new stats to add: # of successful sessions, average words per session, average words per minute, total successful sessions, total ragequits, total rewards, total consequences.
+
+
+
+i broke the custom theme implementation. fixie ):
+
+
+typewriter sounds: https://pixabay.com/sound-effects/search/typewriter/
+
+
+
+✏️ First Words  Start your very first document
+
+📝 Drabbler Write your first 100 words
+📄 First Draft Write your first 500 words
+🎙️ Finding Your Voice  Write your first 1000 words
+📚 Junior Novelist Write your first 5000 words
+📖 Short storyteller   Write your first 10000 words
+🗡️ Mightier Than the Sword Write your first 25000 words
+🖋️ Certified Novelist  Write your first 50000 words
+🏛️ Author  Write your first 100000 words
+
+👣 The First Step  2-day streak
+🏃‍♂️ Sprinter    7-day streak
+🧱 Brick By Brick  14-day streak
+🏆 Wrimo Enthusiast    30-day streak
+💪 Unstoppable Force   60-day streak
+🔥 Eternal Flame   100-day streak
+📆 Year of the Writer  365-day streak
+
+⏱️ Warming up  Write for 5 minutes
+🎯 In the Zone Write for 30 minutes
+⌚ The First Watch Write for 1 hour
+🛠️ The Grind   Write for 5 hours
+🌙 Through the Night   Write for 12 hours
+🌞 Day of writing  Write for 24 hours
+🌊 Flow State  Write for 50 hours
+🕰️ Century Scribe  Write for 100 hours
+
+🙏 Erudite Educator    Visit the About page
+📊 Data Analyst    Visit the Stats page
+🗂️ File Explorer!  Visit the Files page
+🛠️ Tinkerer    Visit the Settings page
+
+🍪 Treat Yourself  Finish a writing session in reward mode
+😈 Glutton for punishment   Finish a writing session in punishment mode
+💀 Masochist  Finish a writing session in kamikaze mode
+
+⚡ Speed writer    Write 500 words in one session
+🏃‍♀️ Marathoner  Write for 2 hours straight
+
+🏕️ Weekend Warrior Write on both a Saturday and a Sunday consecutively
+🎢 Comeback Kid    Break a 30+ day writing drought with a new session
+🥪 Lunch Break Novelist    Write between 12-1 pm
+🦉 Night Owl   Write between midnight and 4am
+🌅 Early Bird  Write before 8am
+🗃️ The Collector — Create 50 separate documents
+🦅 The Phoenix Break a streak and then start again
+🎨 Dabbler Write at least once in 5 different projects
+
+🌟 Overachiever    Unlock 10 achievements
+🏅 Completionist — Unlock all (not-hidden) achievements
+👑 Legend — Unlock them all
+
+Hidden Achievements:
+🤫 Silent Treatment    Open a new blank document but don't write anything for 10 minutes
+🕯️ Witching Hour   Write at exactly 2:00 am
+🔄 Maybe Next Time Open a new blank document 5 times in a row without writing
+📋 Price Fixing    Paste text into a document while in a sprint
+🚀 Blast Off   Write 5000 words in a single day
+🛋️ Procrastinator's Special    Spend 1+ hour on the app without writing a word
+💾 Save Scummer    Manually save a document 10 times in one session
+🕵️‍♂️ Hidden Talent   Unlock your first hidden achievement
+⏰ Deadline Panic  Start writing at 11:59 pm
+🌈 Leap of Faith   Write on Leap Day
+
+⛰️ It's the Climb  Commit to a long-term writing goal
+🤕 Valley of Death  Miss a day while committed to a long-term writing goal
+🧗 Mountaineer Write at least half of the words in your long-term goal by the midpoint of the challenge
+🔝 Summitter    Finish a long-term writing goal!

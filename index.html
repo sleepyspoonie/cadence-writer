@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Focus Writer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="homepage">
+    <header>
+        <div class="optionsnav">
+            <ul>
+                <li>Home</li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="files.html">Files</a></li>
+                <li><a href="statistics.html">Statistics</a></li>
+                <li><a href="settings.html">Settings</a></li>
+            </ul>
+            <button class="fullscreen-btn" id="fullscreenToggle" title="Toggle Fullscreen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+            </button>
+        </div>
+    </header>
+    
+    <aside class="sidebar-left">
+        <div class="progressoverview">
+            <h3>Today's Progress</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-info">
+                <span class="progress-text" id="todayProgress">0 / 1000 words</span>
+                <span class="progress-meta" id="goalMeta" style="display: none;"></span>
+            </div>
+        </div>
+        
+        <div class="quicksettings">
+            <div class="settings-toggle">
+                <h3>Select Mode:</h3>
+                <div class="toggle-container">
+                    <span class="toggle-label">Timer</span>
+                    <label class="toggle">
+                        <input type="checkbox" id="modeToggle">
+                        <span class="slider"></span>
+                    </label>
+                    <span class="toggle-label">Word Count</span>
+                </div>
+            </div>
+            
+            <div class="settings-wordcount" id="wordCountSettings">
+                <h3>Word Count Goal:</h3>
+                <div class="slider-container">
+                    <span class="slider-value" id="wordCountValue">1000</span>
+                    <input type="range" id="wordCountSlider" min="100" max="5000" value="1000" step="100">
+                    <div class="slider-labels">
+                        <span>100</span>
+                        <span>5000</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-timer" id="timerSettings" style="display: none;">
+                <h3>Timer Duration:</h3>
+                <div class="slider-container">
+                    <span class="slider-value" id="timerValue">25 min</span>
+                    <input type="range" id="timerSlider" min="5" max="120" value="25" step="5">
+                    <div class="slider-labels">
+                        <span>5 min</span>
+                        <span>120 min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="documentselect">
+            <h3>Start Writing:</h3>
+            <div class="document-options">
+                <label class="radio-option">
+                    <input type="radio" name="docOption" value="new" checked>
+                    <span>Start New Project</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="docOption" value="recent">
+                    <span>Open Most Recent</span>
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="docOption" value="browse">
+                    <span>Browse Existing</span>
+                </label>
+            </div>
+            <button class="start-button" id="startWriting">Start Writing Session</button>
+        </div>
+    </aside>
+    
+    <aside class="sidebar-right">
+        <div class="stats-section">
+            <h3>Previous Sessions</h3>
+            <div class="stat-card">
+                <div class="stat-label">Today</div>
+                <div class="stat-value">0 words</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">This Week</div>
+                <div class="stat-value">0 words</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Streak</div>
+                <div class="stat-value">0 days</div>
+            </div>
+        </div>
+    </aside>
+    
+    <div class="container">
+        <h1>Welcome to Focus Writer!</h1>
+        
+        <div class="news">
+            <h2>What's New</h2>
+            <div class="news-item">
+                <h3>Version 1.0.0 - Launch!</h3>
+                <p>Welcome to Focus Writer! Your distraction-free writing environment with:</p>
+                <ul>
+                    <li>Timer and Word Count writing modes</li>
+                    <li>Full-screen focused writing</li>
+                    <li>Rich text editing</li>
+                    <li>Auto-save functionality</li>
+                    <li>Session tracking and statistics</li>
+                </ul>
+            </div>
+            <div class="news-item">
+                <h3>Tips for Getting Started</h3>
+                <p>Choose your preferred mode (Timer or Word Count), set your goal, and hit Start Writing Session to begin your focused writing journey!</p>
+            </div>
+        </div>
+    </div>
+
+<!-- Long-term Goal Setup Modal -->
+<div class="goal-overlay" id="goalOverlay" style="display: none;">
+  <div class="goal-modal">
+    <button class="modal-close" id="modalClose">×</button>
+    <h2>Set a Long-Term Writing Goal?</h2>
+    <p>Track your progress towards a larger writing project!</p>
+    
+    <div class="goal-inputs">
+      <div class="inputs-row">
+        <div class="input-group">
+          <label>Total words:</label>
+          <input type="number" id="goalTotalWords" value="50000" min="1000" max="1000000">
+        </div>
+        <div class="input-group">
+          <label>Days:</label>
+          <input type="number" id="goalTotalDays" value="30" min="1" max="365">
+        </div>
+      </div>
+      <div class="goal-calculation">
+        <span id="wordsPerDay">1,667 words per day</span>
+      </div>
+    </div>
+    
+    <div class="goal-buttons">
+      <button class="goal-btn primary" id="startGoalBtn">Start my goal!</button>
+      <button class="goal-btn tertiary" id="disableGoalBtn">Not now</button>
+    </div>
+    
+    <p style="color: var(--color-text-muted); font-size: 0.8rem; margin-top: 1rem; margin-bottom: 0;">
+      Note: Long-term goal tracking can be re-enabled anytime in Settings
+    </p>
+  </div>
+</div>
+
+<!-- Goal Completion Celebration Modal -->
+<div class="goal-overlay" id="celebrationOverlay" style="display: none;">
+  <div class="goal-modal celebration-modal">
+    <div class="celebration-content">
+      <div class="celebration-icon">🎉</div>
+      <h2>Congratulations!</h2>
+      <p id="celebrationMessage">You've completed your writing goal!</p>
+      
+      <div class="goal-buttons">
+        <button class="goal-btn primary" id="newGoalBtn">Start New Goal</button>
+        <button class="goal-btn secondary" id="freewriteBtn">Continue Freewriting</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const path = require('path');
+    
+    console.log('Script initialized - waiting for settings...');
+    
+    // Request settings on load
+    ipcRenderer.send('get-settings');
+    
+    // Long-term goals functionality (define outside DOMContentLoaded)
+    function updateWordsPerDay() {
+        const totalWords = parseInt(document.getElementById('goalTotalWords').value);
+        const totalDays = parseInt(document.getElementById('goalTotalDays').value);
+        const wordsPerDay = Math.ceil(totalWords / totalDays);
+        document.getElementById('wordsPerDay').textContent = `${wordsPerDay.toLocaleString()} words per day`;
+    }
+
+    function checkForGoalSetup() {
+        ipcRenderer.send('check-goal-setup');
+    }
+
+    function showModal() {
+        const overlay = document.getElementById('goalOverlay');
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '0';
+        overlay.querySelector('.goal-modal').style.transform = 'scale(0.7) translateY(-50px)';
+    
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+            overlay.querySelector('.goal-modal').style.transform = 'scale(1) translateY(0)';
+        }, 150); // Increased from 10ms to 150ms for longer delay
+    }
+
+    function hideModal() {
+        const overlay = document.getElementById('goalOverlay');
+        overlay.style.opacity = '0';
+        overlay.querySelector('.goal-modal').style.transform = 'scale(0.7) translateY(-50px)';
+    
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 500); // Increased from 300ms to 500ms for slower hide
+    }
+
+    ipcRenderer.on('show-goal-setup', () => {
+        showModal();
+    });
+    
+    // Check for recent file and request stats on load
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM loaded - adding event listeners');
+        updateRecentFileOption();
+        checkForGoalSetup();
+        
+        // Request homepage stats
+        ipcRenderer.send('get-homepage-stats');
+        
+        // Long-term goals event listeners
+        document.getElementById('goalTotalWords').addEventListener('input', updateWordsPerDay);
+        document.getElementById('goalTotalDays').addEventListener('input', updateWordsPerDay);
+
+        document.getElementById('startGoalBtn').addEventListener('click', () => {
+            const totalWords = parseInt(document.getElementById('goalTotalWords').value);
+            const totalDays = parseInt(document.getElementById('goalTotalDays').value);
+            
+            ipcRenderer.send('set-long-term-goal', {
+                enabled: true,
+                totalWords: totalWords,
+                totalDays: totalDays,
+                startDate: new Date().toISOString()
+            });
+            
+            hideModal();
+        });
+
+        document.getElementById('disableGoalBtn').addEventListener('click', () => {
+            ipcRenderer.send('disable-goal-prompting');
+            hideModal();
+        });
+        
+        // Mode toggle handler
+        document.getElementById('modeToggle').addEventListener('change', function() {
+            console.log('Mode toggled:', this.checked ? 'wordcount' : 'timer');
+            if (this.checked) {
+                document.getElementById('wordCountSettings').style.display = 'block';
+                document.getElementById('timerSettings').style.display = 'none';
+            } else {
+                document.getElementById('wordCountSettings').style.display = 'none';
+                document.getElementById('timerSettings').style.display = 'block';
+            }
+            saveCurrentSettings();
+        });
+
+        // Close button handler
+        document.getElementById('modalClose').addEventListener('click', () => {
+            ipcRenderer.send('disable-goal-prompting');
+            hideModal();
+        });
+
+        // Overlay click handler (but not when clicking the modal itself)
+        document.getElementById('goalOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'goalOverlay') {
+                ipcRenderer.send('disable-goal-prompting');
+                hideModal();
+            }
+        });
+
+        // Save when sliders change
+        document.getElementById('wordCountSlider').addEventListener('change', function() {
+            console.log('Word count slider changed:', this.value);
+            saveCurrentSettings();
+        });
+        
+        document.getElementById('timerSlider').addEventListener('change', function() {
+            console.log('Timer slider changed:', this.value);
+            saveCurrentSettings();
+        });
+
+        // Add these celebration functions
+        function showCelebrationModal() {
+          const overlay = document.getElementById('celebrationOverlay');
+          overlay.style.display = 'flex';
+          overlay.style.opacity = '0';
+          
+          setTimeout(() => {
+            overlay.style.opacity = '1';
+          }, 150);
+        }
+
+        function hideCelebrationModal() {
+          const overlay = document.getElementById('celebrationOverlay');
+          overlay.style.opacity = '0';
+          
+          setTimeout(() => {
+            overlay.style.display = 'none';
+          }, 500);
+        }
+        
+        // Save when document option changes
+        document.querySelectorAll('input[name="docOption"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                console.log('Document option changed:', this.value);
+                saveCurrentSettings();
+            });
+        });
+
+        // Update display while dragging sliders
+        const wordCountSlider = document.getElementById('wordCountSlider');
+        const wordCountValue = document.getElementById('wordCountValue');
+        
+        wordCountSlider.addEventListener('input', function() {
+            wordCountValue.textContent = this.value;
+            updateProgressBar();
+        });
+
+        const timerSlider = document.getElementById('timerSlider');
+        const timerValue = document.getElementById('timerValue');
+        
+        timerSlider.addEventListener('input', function() {
+            timerValue.textContent = this.value + ' min';
+        });
+
+        // Fullscreen toggle button
+        document.getElementById('fullscreenToggle').addEventListener('click', () => {
+            ipcRenderer.send('toggle-fullscreen');
+        });
+
+        // Start button handler
+        document.getElementById('startWriting').addEventListener('click', function() {
+            const selectedOption = document.querySelector('input[name="docOption"]:checked').value;
+            const mode = document.getElementById('modeToggle').checked ? 'wordcount' : 'timer';
+            const goal = mode === 'wordcount' 
+                ? parseInt(document.getElementById('wordCountSlider').value)
+                : parseInt(document.getElementById('timerSlider').value);
+            
+            const sessionSettings = {
+                mode: mode,
+                goal: goal,
+                documentOption: selectedOption
+            };
+            
+            saveCurrentSettings();
+            
+            ipcRenderer.send('check-folder');
+            
+            ipcRenderer.once('folder-check', async (event, result) => {
+                if (result.needsSetup || !result.exists) {
+                    const message = result.needsSetup 
+                        ? 'Welcome! Please select a folder where your writing will be saved.'
+                        : `Cannot find your writing folder: ${result.path}\nPlease select a new folder.`;
+                    
+                    alert(message);
+                    ipcRenderer.send('select-folder');
+                    
+                    ipcRenderer.once('folder-selected', (event, folderPath) => {
+                        console.log('Folder selected:', folderPath);
+                        startWritingSession(selectedOption, sessionSettings);
+                    });
+                } else {
+                    startWritingSession(selectedOption, sessionSettings);
+                }
+            });
+        });
+
+        // Hover effect for disabled recent option
+        document.querySelector('input[value="recent"]').parentElement.addEventListener('mouseenter', function(e) {
+            const radio = this.querySelector('input[type="radio"]');
+            if (radio.disabled) {
+                this.style.cursor = 'not-allowed';
+            }
+        });
+        
+      document.getElementById('newGoalBtn').addEventListener('click', () => {
+        hideCelebrationModal();
+        // Show the goal setup modal
+        showModal();
+      });
+      
+      document.getElementById('freewriteBtn').addEventListener('click', () => {
+        // Disable long-term goal tracking
+        ipcRenderer.send('disable-long-term-goals');
+        hideCelebrationModal();
+      });
+    });
+    
+    // Load saved settings
+    ipcRenderer.on('load-settings', (event, settings) => {
+        console.log('Settings received:', settings);
+        
+        if (!settings) {
+            console.log('No settings to apply');
+            return;
+        }
+        
+        // Store long-term goal info
+        if (settings.longTermGoals) {
+            longTermGoal = settings.longTermGoals;
+        }
+        
+        if (settings.mode === 'wordcount') {
+            document.getElementById('modeToggle').checked = true;
+            document.getElementById('wordCountSettings').style.display = 'block';
+            document.getElementById('timerSettings').style.display = 'none';
+        } else {
+            document.getElementById('modeToggle').checked = false;
+            document.getElementById('wordCountSettings').style.display = 'none';
+            document.getElementById('timerSettings').style.display = 'block';
+        }
+        
+        document.getElementById('timerSlider').value = settings.timerDuration || 25;
+        document.getElementById('timerValue').textContent = (settings.timerDuration || 25) + ' min';
+        
+        document.getElementById('wordCountSlider').value = settings.wordCountGoal || 1000;
+        document.getElementById('wordCountValue').textContent = settings.wordCountGoal || 1000;
+        
+        const docOption = document.querySelector(`input[value="${settings.documentOption}"]`);
+        if (docOption) {
+            docOption.checked = true;
+        }
+        
+        // Update progress bar with current data
+        updateProgressBar();
+    });
+
+    // Update the homepage stats handler
+    ipcRenderer.on('homepage-stats', (event, stats) => {
+        console.log('Homepage received stats:', stats);
+        
+        const statCards = document.querySelectorAll('.stat-card');
+        
+        if (statCards[0]) {
+            statCards[0].querySelector('.stat-value').textContent = `${stats.todayWords} words`;
+        }
+        if (statCards[1]) {
+            statCards[1].querySelector('.stat-value').textContent = `${stats.weekWords} words`;
+        }
+        if (statCards[2]) {
+            statCards[2].querySelector('.stat-value').textContent = `${stats.streak} days`;
+        }
+        
+        // Update progress bar with today's words
+          updateProgressBar(stats.todayWords);
+          if (stats.goalCompleted) {
+      setTimeout(() => {
+        showCelebrationModal();
+      }, 1000); // Small delay for better UX
+    }
+  });
+    
+    function applySettings(settings) {
+        console.log('Applying settings to UI:', settings);
+        
+        if (!settings) {
+            console.log('No settings to apply');
+            return;
+        }
+        
+        if (settings.mode === 'wordcount') {
+            document.getElementById('modeToggle').checked = true;
+            document.getElementById('wordCountSettings').style.display = 'block';
+            document.getElementById('timerSettings').style.display = 'none';
+        } else {
+            document.getElementById('modeToggle').checked = false;
+            document.getElementById('wordCountSettings').style.display = 'none';
+            document.getElementById('timerSettings').style.display = 'block';
+        }
+        
+        document.getElementById('timerSlider').value = settings.timerDuration || 25;
+        document.getElementById('timerValue').textContent = (settings.timerDuration || 25) + ' min';
+        
+        document.getElementById('wordCountSlider').value = settings.wordCountGoal || 1000;
+        document.getElementById('wordCountValue').textContent = settings.wordCountGoal || 1000;
+        
+        const docOption = document.querySelector(`input[value="${settings.documentOption}"]`);
+        if (docOption) {
+            docOption.checked = true;
+        }
+        
+        updateProgressBar();
+    }
+
+    function saveCurrentSettings() {
+        const settings = {
+            mode: document.getElementById('modeToggle').checked ? 'wordcount' : 'timer',
+            timerDuration: parseInt(document.getElementById('timerSlider').value),
+            wordCountGoal: parseInt(document.getElementById('wordCountSlider').value),
+            documentOption: document.querySelector('input[name="docOption"]:checked').value
+        };
+        
+        ipcRenderer.send('save-settings', settings);
+        console.log('Settings saved:', settings);
+    }
+
+    function updateRecentFileOption() {
+        const recentRadio = document.querySelector('input[value="recent"]');
+        const recentLabel = recentRadio.nextElementSibling;
+        
+        ipcRenderer.send('get-settings');
+        
+        ipcRenderer.once('load-settings', (event, settings) => {
+            if (!settings || !settings.lastOpenedFile) {
+                recentRadio.disabled = true;
+                recentLabel.style.opacity = '0.5';
+                recentLabel.style.cursor = 'not-allowed';
+                recentLabel.title = 'This is your first project!';
+            } else {
+                recentRadio.disabled = false;
+                recentLabel.style.opacity = '1';
+                recentLabel.style.cursor = 'pointer';
+                const filename = settings.lastOpenedFile.split(/[\\\/]/).pop();
+                recentLabel.title = `Open: ${filename}`;
+            }
+        });
+    }
+
+    function startWritingSession(documentOption, sessionSettings) {
+        switch(documentOption) {
+            case 'new':
+                ipcRenderer.send('start-new-document', sessionSettings);
+                break;
+            case 'browse':
+                ipcRenderer.send('browse-document', sessionSettings);
+                break;
+            case 'recent':
+                const recentRadio = document.querySelector('input[value="recent"]');
+                if (recentRadio.disabled) {
+                    alert('No recent files found. Starting a new document instead.');
+                    ipcRenderer.send('start-new-document', sessionSettings);
+                } else {
+                    ipcRenderer.send('open-recent-document', sessionSettings);
+                }
+                break;
+        }
+    }
+
+    function updateProgressBar() {
+        const progressFill = document.getElementById('progressFill');
+        const currentWords = 0;
+        const goalWords = parseInt(document.getElementById('wordCountSlider').value);
+        const percentage = Math.min((currentWords / goalWords) * 100, 100);
+        
+        progressFill.style.width = percentage + '%';
+        
+        if (percentage < 33) {
+            progressFill.style.background = '#e74c3c';
+        } else if (percentage < 66) {
+            progressFill.style.background = '#f39c12';
+        } else {
+            progressFill.style.background = '#27ae60';
+        }
+        
+        document.querySelector('.progress-text').textContent = `${currentWords} / ${goalWords} words`;
+    }
+
+    ipcRenderer.on('fullscreen-changed', (event, isFullscreen) => {
+        const btn = document.getElementById('fullscreenToggle');
+        if (isFullscreen) {
+            btn.title = 'Exit Fullscreen';
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                </svg>`;
+        } else {
+            btn.title = 'Enter Fullscreen';
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>`;
+        }
+    });
+
+    // File handling responses
+    ipcRenderer.on('needs-folder-setup', () => {
+        alert('Please select a folder for your documents first.');
+    });
+
+    ipcRenderer.on('no-recent-file', () => {
+        alert('No recent files found. Starting a new document instead.');
+        const sessionSettings = {
+            mode: document.getElementById('modeToggle').checked ? 'wordcount' : 'timer',
+            goal: document.getElementById('modeToggle').checked 
+                ? parseInt(document.getElementById('wordCountSlider').value)
+                : parseInt(document.getElementById('timerSlider').value)
+        };
+        ipcRenderer.send('start-new-document', sessionSettings);
+    });
+
+    ipcRenderer.on('recent-file-not-found', (event, filepath) => {
+        const filename = filepath.split(/[\\\/]/).pop();
+        alert(`Could not find recent file: ${filename}\nStarting a new document instead.`);
+        const sessionSettings = {
+            mode: document.getElementById('modeToggle').checked ? 'wordcount' : 'timer',
+            goal: document.getElementById('modeToggle').checked 
+                ? parseInt(document.getElementById('wordCountSlider').value)
+                : parseInt(document.getElementById('timerSlider').value)
+        };
+        ipcRenderer.send('start-new-document', sessionSettings);
+    });
+
+    ipcRenderer.on('file-error', (event, message) => {
+        alert(`Error: ${message}`);
+    });
+
+    ipcRenderer.on('save-before-close', () => {
+        console.log('Saving settings before close...');
+        saveCurrentSettings();
+    });
+
+    let longTermGoal = null;
+
+    function updateProgressBar(todayWords = 0) {
+        const progressFill = document.getElementById('progressFill');
+        const todayProgressText = document.getElementById('todayProgress');
+        const goalMetaText = document.getElementById('goalMeta');
+        
+        let dailyGoal = parseInt(document.getElementById('wordCountSlider').value);
+        let goalWords = dailyGoal;
+        
+        // Use long-term goal if available
+        if (longTermGoal && longTermGoal.enabled) {
+            dailyGoal = Math.ceil(longTermGoal.totalWords / longTermGoal.totalDays);
+            goalWords = dailyGoal;
+            
+            // Calculate days remaining
+            const startDate = new Date(longTermGoal.startDate);
+            const today = new Date();
+            const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+            const daysRemaining = Math.max(0, longTermGoal.totalDays - daysPassed);
+            
+            // Calculate total words written (you'll need to get this from stats)
+            const totalWordsWritten = getCurrentTotalWords(); // We'll implement this
+            
+            // Show goal meta info
+            goalMetaText.textContent = `${totalWordsWritten.toLocaleString()} / ${longTermGoal.totalWords.toLocaleString()} total\n${daysRemaining} days left`;
+            goalMetaText.style.display = 'block';
+        } else {
+            goalMetaText.style.display = 'none';
+        }
+        
+        const percentage = Math.min((todayWords / goalWords) * 100, 100);
+        
+        progressFill.style.width = percentage + '%';
+        
+        if (percentage < 33) {
+            progressFill.style.background = '#e74c3c';
+        } else if (percentage < 66) {
+            progressFill.style.background = '#f39c12';
+        } else {
+            progressFill.style.background = '#27ae60';
+        }
+        
+        todayProgressText.textContent = `${todayWords} / ${goalWords} words`;
+    }
+
+    function getCurrentTotalWords() {
+        // This should return the total words from all writing sessions
+        // You might need to request this from the main process
+        return 0; // Placeholder
+    }
+
+    updateProgressBar();
+</script>
+    <script src="visibility-controller.js"></script>
+    <script src="theme-manager.js"></script>
+</body>
+</html>

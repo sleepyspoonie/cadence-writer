@@ -1,0 +1,25 @@
+# Node / Electron
+node_modules/
+dist/
+out/
+build/
+*.log
+*.asar
+.parcel-cache/
+.next/
+.nuxt/
+.vite/
+.cache/
+coverage/
+*.tsbuildinfo
+ECHO is on.
+# OS / Editor
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+ECHO is on.
+# Env / secrets
+.env
+.env.local

@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Focus Writer - Writing Session</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <style>
+        /* Base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            overflow-x: hidden;
+        }
+        
+        /* Main container */
+        .editor-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+            background: var(--color-bg-primary);
+            overflow-x: hidden;
+        }
+        
+        /* Header */
+        .editor-header {
+            background: var(--color-bg-primary);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--color-border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+        
+        .session-info {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        
+        .session-mode {
+            color: var(--color-accent);
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .session-progress {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .progress-label {
+            color: var(--color-text-faint);
+            font-size: 0.875rem;
+        }
+        
+        .progress-value {
+            color: var(--color-text-primary);
+            font-size: 1.25rem;
+            font-weight: 300;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* Controls */
+        .editor-controls {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            padding: 0.625rem 1.25rem;
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .control-btn:hover {
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            border-color: var(--color-accent);
+            transform: translateY(-1px);
+        }
+        
+        .control-btn.active {
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        .fullscreen-btn {
+            background: transparent;
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fullscreen-btn:hover {
+            background: var(--color-accent-muted);
+            color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+
+        .fullscreen-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        /* Editor wrapper */
+        #editor-wrapper {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 3rem 2rem;
+            overflow-y: auto;
+            background: linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
+            width: 100%;
+        }
+        
+        /* Main editor container - stays light */
+        .editor-main {
+            width: 100%;
+            max-width: 850px;
+            background: var(--editor-bg);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 200px);
+        }
+        
+        /* Quill editor container */
+        #editor {
+            border: none !important;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        
+        /* Quill toolbar - sticky positioning */
+        .ql-toolbar {
+            position: sticky !important;
+            top: 0;
+            z-index: 100;
+            background: var(--editor-toolbar) !important;
+            border: none !important;
+            border-bottom: 1px solid var(--editor-border) !important;
+            padding: 12px 16px !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
+            gap: 8px !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        }
+        
+        /* Quill container */
+        .ql-container {
+            flex: 1;
+            overflow-y: auto;
+            border: none !important;
+            font-family: 'Georgia', 'Charter', 'Times New Roman', serif !important;
+            background: var(--editor-bg);
+        }
+        
+        /* Quill editor content area */
+        .ql-editor {
+            min-height: calc(100vh - 280px);
+            padding: 3rem !important;
+            line-height: 1.8 !important;
+            color: var(--editor-text) !important;
+            background: var(--editor-bg);
+        }
+
+        .ql-editor h1, .ql-editor h2, .ql-editor h3 {
+            color: var(--editor-text) !important;
+        }
+        
+        .ql-editor:focus {
+            outline: none !important;
+        }
+        
+        .ql-editor.ql-blank::before {
+            color: var(--color-text-muted);
+            font-style: normal;
+            left: 3rem;
+            right: 3rem;
+        }
+        
+        /* Quill toolbar buttons */
+        .ql-toolbar button {
+            width: 28px !important;
+            height: 28px !important;
+            padding: 3px !important;
+            margin: 0 !important;
+        }
+        
+        .ql-toolbar button:hover {
+            color: var(--color-accent) !important;
+            background: var(--color-accent-muted) !important;
+            border-radius: 4px;
+        }
+        
+        .ql-toolbar button.ql-active {
+            color: var(--color-accent) !important;
+            background: var(--color-accent-muted) !important;
+            border-radius: 4px;
+        }
+        
+        .ql-toolbar .ql-stroke {
+            stroke: #444 !important;
+        }
+        
+        .ql-toolbar .ql-fill {
+            fill: #444 !important;
+        }
+        
+        .ql-toolbar button:hover .ql-stroke,
+        .ql-toolbar button.ql-active .ql-stroke {
+            stroke: var(--color-accent) !important;
+        }
+        
+        .ql-toolbar button:hover .ql-fill,
+        .ql-toolbar button.ql-active .ql-fill {
+            fill: var(--color-accent) !important;
+        }
+        
+        .ql-toolbar .ql-picker {
+            color: #444 !important;
+        }
+        
+        .ql-toolbar .ql-picker-options {
+            background: var(--editor-bg) !important;
+            border: 1px solid var(--editor-border) !important;
+            border-radius: 4px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1) !important;
+        }
+        
+        /* Success modal */
+        .success-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--color-bg-secondary);
+            padding: 3rem;
+            border-radius: 16px;
+            text-align: center;
+            z-index: 1000;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+            border: 1px solid var(--color-border);
+        }
+        
+        .success-modal.show {
+            display: block;
+        }
+        
+        .success-modal h2 {
+            color: var(--color-accent);
+            margin-bottom: 1rem;
+            font-size: 1.75rem;
+        }
+        
+        .success-modal p {
+            color: var(--color-text-secondary);
+            margin-bottom: 2rem;
+            font-size: 1.125rem;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 0.875rem 2rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 0.95rem;
+        }
+        
+        .modal-btn.primary {
+            background: var(--color-accent);
+            color: #000;
+        }
+        
+        .modal-btn.secondary {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--color-overlay);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+        }
+        
+        .overlay.show {
+            display: block;
+        }
+        
+        /* Scrollbar styling */
+        #editor-wrapper::-webkit-scrollbar,
+        .ql-container::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        #editor-wrapper::-webkit-scrollbar-track,
+        .ql-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        #editor-wrapper::-webkit-scrollbar-thumb,
+        .ql-container::-webkit-scrollbar-thumb {
+            background: var(--color-border);
+            border-radius: 5px;
+        }
+        
+        #editor-wrapper::-webkit-scrollbar-thumb:hover,
+        .ql-container::-webkit-scrollbar-thumb:hover {
+            background: var(--color-border-hover);
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <div class="editor-header">
+            <div class="session-info">
+                <span class="session-mode" id="sessionMode">Timer Mode</span>
+                <div class="session-progress">
+                    <span class="progress-label" id="progressLabel">Time Remaining:</span>
+                    <span class="progress-value" id="progressValue">25:00</span>
+                </div>
+                <div class="session-progress">
+                    <span class="progress-label">Words:</span>
+                    <span class="progress-value" id="wordCount">0</span>
+                </div>
+            </div>
+            <div class="editor-controls">
+                <button class="control-btn" id="pauseBtn">Pause</button>
+                <button class="control-btn" id="saveBtn">Save</button>
+                <button class="control-btn" id="exitBtn">Exit Session</button>
+            </div>
+            <!-- In the editor-header div, after editor-controls -->
+            <button class="fullscreen-btn" id="fullscreenToggle" title="Toggle Fullscreen">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <div id="editor-wrapper">
+            <div class="editor-main">
+                <div id="editor"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Success Modal -->
+    <div class="overlay" id="overlay"></div>
+    <div class="success-modal" id="successModal">
+        <h2>🎉 Congratulations!</h2>
+        <p id="successMessage">You've completed your writing session!</p>
+        <div class="modal-buttons">
+            <button class="modal-btn primary" id="newSessionBtn">Freewrite</button>
+            <button class="modal-btn secondary" id="continueWritingBtn">Continue Sprinting</button>
+            <button class="modal-btn secondary" id="finishBtn">Finish</button>
+        </div>
+    </div>
+    
+<!-- Add Quill from CDN -->
+<script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+<script>
+    const { ipcRenderer } = require('electron');
+    
+    // Initialize Quill editor
+    const quill = new Quill('#editor', {
+        theme: 'snow',
+        placeholder: 'Start writing your masterpiece...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                ['clean']
+            ]
+        }
+    });
+    
+    // Session variables
+    let sessionMode = 'timer';
+    let sessionGoal = 25;
+    let timerInterval = null;
+    let timeRemaining = 0;
+    let isPaused = false;
+    let currentWordCount = 0;
+    let wordCountGoal = 1000;
+    let initialWordCount = 0;
+    let sessionWordCount = 0;
+    let sessionStarted = false;
+    let settingsReceived = false;
+    let sessionStartTime = Date.now();
+
+    // Apply custom editor settings (font size and family)
+    function applyCustomEditorSettings() {
+        ipcRenderer.send('get-settings');
+        
+        ipcRenderer.once('load-settings', (event, settings) => {
+            if (settings && settings.editorSettings) {
+                const { fontSize, fontFamily } = settings.editorSettings;
+                
+                // Try to apply immediately
+                const attemptApply = () => {
+                    const editorElement = document.querySelector('.ql-editor');
+                    
+                    if (editorElement) {
+                        if (fontSize) {
+                            editorElement.style.fontSize = `${fontSize}px`;
+                            editorElement.style.lineHeight = '1.8';
+                        }
+                        
+                        if (fontFamily) {
+                            const fontMap = {
+                                'Georgia': 'Georgia, serif',
+                                'Arial': 'Arial, sans-serif',
+                                'Times New Roman': '"Times New Roman", Times, serif',
+                                'Helvetica': 'Helvetica, Arial, sans-serif',
+                                'Courier New': '"Courier New", Courier, monospace'
+                            };
+                            
+                            const fontValue = fontMap[fontFamily] || fontFamily;
+                            editorElement.style.fontFamily = fontValue;
+                        }
+                        return true;
+                    }
+                    return false;
+                };
+                
+                // Try immediately
+                if (!attemptApply()) {
+                    // If not ready, use MutationObserver to apply as soon as element exists
+                    const observer = new MutationObserver(() => {
+                        if (attemptApply()) {
+                            observer.disconnect();
+                        }
+                    });
+                    
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            }
+        });
+    }
+
+    // Call it immediately after Quill initialization
+    applyCustomEditorSettings();
+
+    // Report session completion
+    function reportSessionComplete() {
+        const text = quill.getText();
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+        
+        const sessionEndTime = Date.now();
+        const timeSpentMinutes = Math.round((sessionEndTime - sessionStartTime) / 60000);
+        
+        console.log('Session time:', timeSpentMinutes, 'minutes');
+        
+        ipcRenderer.send('session-completed', {
+            totalWords: words,
+            mode: sessionMode,
+            duration: sessionMode === 'timer' ? sessionGoal * 60 - timeRemaining : 0,
+            timeSpent: timeSpentMinutes
+        });
+    }
+
+    // Get session settings from main process
+    ipcRenderer.on('session-settings', (event, settings) => {
+        console.log('Session settings received:', settings);
+        sessionMode = settings.mode;
+        sessionGoal = settings.goal;
+        settingsReceived = true;
+        
+        if (sessionMode === 'freewrite') {
+            document.getElementById('sessionMode').textContent = 'Freewrite Mode';
+            document.getElementById('progressLabel').textContent = 'Session:';
+            document.getElementById('progressValue').textContent = 'No limit';
+
+            // Ensure exit button is visible in freewrite mode
+            const exitBtn = document.getElementById('exitBtn');
+            if (exitBtn) {
+                exitBtn.style.display = 'block';
+            }
+        } else if (sessionMode === 'timer') {
+            document.getElementById('sessionMode').textContent = 'Timer Mode';
+            document.getElementById('progressLabel').textContent = 'Time Remaining:';
+            timeRemaining = sessionGoal * 60;
+            updateTimerDisplay();
+            setTimeout(() => {
+                console.log('Starting timer with', timeRemaining, 'seconds');
+                startTimer();
+            }, 100);
+        } else {
+            document.getElementById('sessionMode').textContent = 'Word Count Mode';
+            document.getElementById('progressLabel').textContent = 'Goal:';
+            document.getElementById('progressValue').textContent = `${sessionGoal} words`;
+            wordCountGoal = sessionGoal;
+        }
+    });
+
+    // Request session settings
+    ipcRenderer.send('get-session-settings');
+
+    // Load existing file content
+    setTimeout(() => {
+        ipcRenderer.send('get-current-file');
+    }, 100);
+
+    ipcRenderer.on('current-file-info', (event, fileInfo) => {
+    if (fileInfo && fileInfo.content) {
+        console.log('Loading file:', fileInfo.name);
+        
+        // Wait a moment for Quill to be fully ready, then load content
+        setTimeout(() => {
+        quill.setContents(fileInfo.content);
+        quill.focus(); // Re-focus the editor after loading content
+        }, 100);
+        
+        const text = quill.getText();
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+        initialWordCount = words.length;
+        console.log('Starting with existing', initialWordCount, 'words in document');
+        
+        document.getElementById('wordCount').textContent = '0';
+    }
+    
+    ipcRenderer.send('session-started', { 
+        initialWords: initialWordCount 
+    });
+    
+    setTimeout(() => {
+        sessionStarted = true;
+        console.log('Session started, goal checking enabled');
+        console.log('Current mode:', sessionMode, 'Goal:', sessionGoal);
+    }, 500);
+    });
+
+    // Start session if no file to load
+    setTimeout(() => {
+        if (!sessionStarted) {
+            sessionStarted = true;
+            console.log('Session started (new document), goal checking enabled');
+        }
+    }, 1500);
+
+    // Word count tracking
+    quill.on('text-change', function(delta, oldDelta, source) {
+        if (source !== 'user') return;
+        
+        const text = quill.getText();
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+        const totalWords = words.length;
+        
+        sessionWordCount = Math.max(0, totalWords - initialWordCount);
+        currentWordCount = totalWords;
+        
+        document.getElementById('wordCount').textContent = sessionWordCount;
+        
+        if (sessionStarted && sessionMode === 'wordcount' && sessionWordCount >= wordCountGoal && !isPaused) {
+            showSuccessModal();
+        }
+        
+        clearTimeout(window.autoSaveTimeout);
+        window.autoSaveTimeout = setTimeout(() => {
+            autoSave();
+        }, 5000);
+    });
+    
+    // Timer functions
+    function startTimer() {
+        if (sessionMode !== 'timer') return;
+        
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        
+        if (!isPaused && timeRemaining > 0) {
+            timerInterval = setInterval(() => {
+                if (timeRemaining > 0 && !isPaused) {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    
+                    if (timeRemaining === 0) {
+                        clearInterval(timerInterval);
+                        showSuccessModal();
+                    }
+                }
+            }, 1000);
+        }
+    }
+    
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        document.getElementById('progressValue').textContent = 
+            `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    function pauseTimer() {
+        isPaused = !isPaused;
+        const pauseBtn = document.getElementById('pauseBtn');
+        
+        if (isPaused) {
+            clearInterval(timerInterval);
+            pauseBtn.textContent = 'Resume';
+            pauseBtn.classList.add('active');
+        } else {
+            startTimer();
+            pauseBtn.textContent = 'Pause';
+            pauseBtn.classList.remove('active');
+        }
+    }
+    
+    function showSuccessModal() {
+        isPaused = true;
+        clearInterval(timerInterval);
+        
+        const message = sessionMode === 'timer' 
+            ? `You've completed your ${sessionGoal} minute writing session!`
+            : `You've reached your goal of ${wordCountGoal} words!`;
+        
+        document.getElementById('successMessage').textContent = message;
+        document.getElementById('overlay').classList.add('show');
+        document.getElementById('successModal').classList.add('show');
+        
+        autoSave();
+    }
+    
+    function autoSave() {
+        const content = quill.getContents();
+        const text = quill.getText();
+        
+        if (text.trim().length === 0) return;
+        
+        // Convert Delta to RTF-formatted text
+        const rtfText = convertDeltaToRTFText(content);
+        
+        console.log('Auto-saving...', text.length, 'characters');
+        
+        ipcRenderer.send('auto-save', {
+            content: content,
+            text: rtfText,  // Send RTF-formatted text instead of plain text
+            wordCount: currentWordCount
+        });
+    }
+
+    function convertDeltaToRTFText(delta) {
+        let result = '';
+        
+        if (delta && delta.ops) {
+            delta.ops.forEach(op => {
+                if (typeof op.insert === 'string') {
+                    let text = op.insert;
+                    
+                    // Apply RTF formatting codes
+                    if (op.attributes) {
+                        if (op.attributes.bold) text = `\\b ${text}\\b0`;
+                        if (op.attributes.italic) text = `\\i ${text}\\i0`;
+                        if (op.attributes.underline) text = `\\ul ${text}\\ul0`;
+                        if (op.attributes.script === 'sub') text = `\\sub ${text}\\nosupersub`;
+                        if (op.attributes.script === 'super') text = `\\super ${text}\\nosupersub`;
+                        if (op.attributes.strike) text = `\\strike ${text}\\strike0`;
+                        if (op.attributes.header === 1) text = `\\fs48 ${text}\\fs24`;
+                        if (op.attributes.header === 2) text = `\\fs36 ${text}\\fs24`;
+                        if (op.attributes.header === 3) text = `\\fs28 ${text}\\fs24`;
+                        if (op.attributes.blockquote) text = `\\ql\\li720 ${text}\\li0`;
+                        if (op.attributes['code-block']) text = `\\f1 ${text}\\f0`;
+                        if (op.attributes.list === 'ordered') text = `\\pntext\\tab ${text}`;
+                        if (op.attributes.list === 'bullet') text = `\\pntext\\bullet\\tab ${text}`;
+                        if (op.attributes.indent) {
+                            const indentLevel = op.attributes.indent * 720;
+                            text = `\\li${indentLevel} ${text}\\li0`;
+                        }
+                    }
+                    
+                    result += text;
+                }
+            });
+        }
+        
+        return result;
+    }
+    
+    // Button handlers
+    document.getElementById('pauseBtn').addEventListener('click', pauseTimer);
+    
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        const text = quill.getText();
+        if (text.trim().length > 0) {
+            ipcRenderer.send('auto-save', {
+                content: quill.getContents(),
+                text: text,
+                wordCount: currentWordCount
+            });
+            
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saved!';
+            saveBtn.classList.add('active');
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.classList.remove('active');
+            }, 2000);
+        }
+    });
+    
+    document.getElementById('exitBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to exit? Your work will be saved.')) {
+            autoSave();
+            reportSessionComplete();
+            setTimeout(() => {
+                ipcRenderer.send('exit-to-home');
+            }, 500);
+        }
+    });
+    
+    // Modal button handlers
+    document.getElementById('newSessionBtn').addEventListener('click', () => {
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('successModal').classList.remove('show');
+        
+        isPaused = false;
+        
+        if (sessionMode === 'timer') {
+            clearInterval(timerInterval);
+            document.getElementById('progressLabel').textContent = 'Freewriting:';
+            document.getElementById('progressValue').textContent = 'No limit';
+        } else {
+            document.getElementById('progressValue').textContent = 'No limit';
+            wordCountGoal = Infinity;
+        }
+    });
+    
+    document.getElementById('continueWritingBtn').addEventListener('click', () => {
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('successModal').classList.remove('show');
+        
+        isPaused = false;
+        
+        if (sessionMode === 'timer') {
+            timeRemaining = sessionGoal * 60;
+            updateTimerDisplay();
+            startTimer();
+        }
+    });
+    
+    document.getElementById('finishBtn').addEventListener('click', () => {
+        autoSave();
+        reportSessionComplete();
+        setTimeout(() => {
+            ipcRenderer.send('exit-to-home');
+        }, 500);
+    });
+    
+    // Save when window loses focus
+    window.addEventListener('blur', () => {
+        autoSave();
+    });
+    
+    // Save before unload
+    window.addEventListener('beforeunload', (e) => {
+        autoSave();
+    });
+
+    // Fullscreen toggle
+    document.getElementById('fullscreenToggle').addEventListener('click', () => {
+        ipcRenderer.send('toggle-fullscreen');
+    });
+
+    ipcRenderer.on('fullscreen-changed', (event, isFullscreen) => {
+        const btn = document.getElementById('fullscreenToggle');
+        if (isFullscreen) {
+            btn.title = 'Exit Fullscreen';
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                </svg>`;
+        } else {
+            btn.title = 'Enter Fullscreen';
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>`;
+        }
+    });
+    
+    // Focus the editor
+    quill.focus();
+</script>
+<script src="visibility-controller.js"></script>
+<script src="theme-manager.js"></script>
+</body>
+</html>
