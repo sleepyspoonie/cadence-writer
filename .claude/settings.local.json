@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep:*)",
+      "Read(C:\\Users\\Shay\\Dropbox\\Arts & Crafting\\Writing\\FocusWriter/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

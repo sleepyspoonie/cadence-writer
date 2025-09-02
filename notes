@@ -1,43 +1,34 @@
-1. When i start a sprint, the word count is being counted from the existing word count now, not from zero. Please fix. Also, when someone starts a new long term sprint, the today's progress should start from 0, not from what you already wrote today. Next, when i finish a long-term goal, freewrite should toggle us to disable long-term goals in settings. Additionally, entering freewrite should also hide the today's progress section. Have the elements underneath slide smoothly up to take its place. If the user starts a new long-term goal, reset the today's progress to 0. Also, the 0/### # days left section is not updating with word count.
+we seem to still be in the process of implementing long-term goals. I tried to set a new long-term goal from settings, and I was not able to type in the text fields for the goal word count and duration.
+
+Also, please make it so that changing the custom theme also triggers the slide-up save bar at the bottom of the page.
+
+i have reverted back to the previous commit due to overwhelming and unresolvable errors in the current version. next, please add a new preset custom theme to my code. I want it to be called crystaline and have these be its colors: Background: #7e6ab4; Text: #ffffff; Accent: #14b8a6; Card Background: #372e56
+
+I have some new stats to add as well: # of successful sessions (word count goal reached, timer goal reached.), average words per session, average words per minute, total successful sessions, total ragequits ("exit session" button OR application closed while goal incomplete). In the modal that pops up whenever you successfully achieve a goal, start new sprint should trigger a brand new goal, so someone may have the opportunity for multiple successes in the same go. Freewrite, whether from files or fromt he modal, should never trigger success or ragequit. It's a neutral activity. Ragequits can never be triggered from the modal, because the modal only pops up after a successful sprint.
+
+My files folder is saying that some of my files have 0 words, which is inaccurate.
 
 
 
-also, there is white flashing when I tab into some of the new pages. Also, there didn't used to be, but there's now also a flash where you can see the stats link before it hides in the nav if you have it disabled. i don't want flashing.
-
-9. We need to set a minimum size for the program that we don't want it shrunk down smaller than.
-
-10. Once that's done, I want to add functionality for long-term goals. Like, a "write this many words by this day" sort of system. So you could put, say, 50k words, 30 days, and the today's progress section of the homepage left aside would tell you how many words were you goal to write today and how far from achieving it. If a long-term goal is not set, this should be hidden. If it is set, it should be visible. the 0/### should be the number of words they need to write today.
-If the user opens the software and there is not a long-term goal set:
-popup asking if they'd like to set one. The popup will have the following:
-A text field for total words they want to write. Default 50,000
-A text field for how many days they want to write it over the course of. Default is 30
-A displayed text that says how many words per day, calculated by dividing total words by total days. This will adjust as they adjust their numbers.
-Below it will have 3 options:
-- Start my goal!
-- Not now
-- Disable long-term goal setting (this can be re-enabled in settings)
-
-If they click "start my goal":
--"today's progress" tracker will be set to visible in the settings. It should be set to be disabled by default, and greyed out and unusable if the person does not have a long term goal enabled.
--Today's progress in the left aside in the homepage will have the #/## denominator set to their daily goal. The numerator should be set to total number of words written. The bar should fill up as they get closer to their goal.
-
-If they click "not now" do nothing and prompt them again next time they open the software.
-
-If they click "disable long term goal setting" enable the setting in settings.html that turns off prompting for long-term goals. Also make sure hide today's progress is checked on and greyed out.
-
-We also need to add that setting. Let's rearrange the settings.html file so that "hide today's progress" and "disable long term goal setting" are together under a long-term goals or daily goals card by themselves.
-
-11. Now it's time to circle back around to achievements. We need to be able ot track them. I'd also like to add more. I also think it's important for our file organization to be well-suited to adding more of them n the future. Maybe we keep them in a separate document? I also want to be able to have hidden achievements (one could be pasting words into a document, like a cheeky little one that catches you "cheating"). On the statistics page, go ahead and show all the achievements they already have unlocked but include a little text wtih a > arrow to click through to see all ### locked achievements. All hidden achievements should be shown as a hidden achievement for which the task is hidden.
-
-12. Hide achievements should disable achievements turning on and off. It should also hide them from the statistics page altogether.
-
-13. implement reward mode, kamikaze mode, punishment mode
-
-14. some cool new stats to add: # of successful sessions, average words per session, average words per minute, total successful sessions, total ragequits, total rewards, total consequences.
 
 
 
-i broke the custom theme implementation. fixie ):
+
+2.  some cool new stats to add to the stats page: # of successful sessions, average words per session, average words per minute, total successful sessions, total ragequits (exit editor w/o achieving goal)
+3. We need to set a minimum size for the program that we don't want it shrunk down smaller than.
+4. investigate: in long-term tracking, i think i saw it default to 50k words/30 days when i don't remember having actually set it.
+5. Now it's time to circle back around to achievements. We need to be able ot track them. I'd also like to add more. I also think it's important for our file organization to be well-suited to adding more of them n the future. Maybe we keep them in a separate document? I also want to be able to have hidden achievements (one could be pasting words into a document, like a cheeky little one that catches you "cheating"). On the statistics page, go ahead and show all the achievements they already have unlocked but include a little text wtih a > arrow to click through to see all ### locked achievements. All hidden achievements should be shown as a hidden achievement for which the task is hidden.
+
+12. now in settings: Hide achievements should disable achievements turning on and off. It should also hide them from the statistics page altogether.
+
+
+
+
+additional notes about the bug: if i click on a different program like discord or firefox and then click back into the quill editor, it works again. same with opening f12. the error does not happen if i complete a sprit successfully.
+
+
+
+13. implement reward mode, kamikaze mode, punishment mode. also add total rewards and total consequences to stats
 
 
 typewriter sounds: https://pixabay.com/sound-effects/search/typewriter/

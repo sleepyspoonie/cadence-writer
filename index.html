@@ -484,6 +484,10 @@
         console.log('Words from goal start:', totalWordsWritten);
         
         // Update progress bar with today's words and goal progress
+        console.log('Updating progress bar with:', {
+            todayWords: stats.todayWords,
+            goalProgressToday: stats.goalProgressToday
+        });
         updateProgressBar(stats.todayWords, stats.goalProgressToday);
         
         // Show celebration modal if goal completed

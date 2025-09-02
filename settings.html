@@ -775,6 +775,16 @@
                             transition: all 0.2s;
                             font-size: 0.85rem;
                         ">Sepia</button>
+                        <button class="preset-btn" data-preset="crystalline" style="
+                            padding: 0.5rem 1rem;
+                            background: var(--color-bg-tertiary);
+                            border: 1px solid var(--color-border);
+                            color: var(--color-text-primary);
+                            border-radius: 6px;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                            font-size: 0.85rem;
+                        ">Crystalline</button>
                     </div>
                 </div>
                 
@@ -1100,11 +1110,11 @@
         <div class="inputs-row">
             <div class="input-group">
             <label>Total words:</label>
-            <input type="number" id="goalTotalWords" value="50000" min="1000" max="1000000">
+            <input type="number" id="settingsGoalTotalWords" value="50000" min="1000" max="1000000">
             </div>
             <div class="input-group">
             <label>Days:</label>
-            <input type="number" id="goalTotalDays" value="30" min="1" max="365">
+            <input type="number" id="settingsGoalTotalDays" value="30" min="1" max="365">
             </div>
         </div>
         <div class="goal-calculation">
@@ -1226,8 +1236,8 @@
 
     // Long-term goals modal functionality
     function updateWordsPerDay() {
-        const totalWords = parseInt(document.getElementById('goalTotalWords').value);
-        const totalDays = parseInt(document.getElementById('goalTotalDays').value);
+        const totalWords = parseInt(document.getElementById('settingsGoalTotalWords').value);
+        const totalDays = parseInt(document.getElementById('settingsGoalTotalDays').value);
         const wordsPerDay = Math.ceil(totalWords / totalDays);
         document.getElementById('wordsPerDay').textContent = `${wordsPerDay.toLocaleString()} words per day`;
     }
@@ -1388,12 +1398,12 @@
     });
 
     // Long-term goals modal event listeners
-    document.getElementById('goalTotalWords').addEventListener('input', updateWordsPerDay);
-    document.getElementById('goalTotalDays').addEventListener('input', updateWordsPerDay);
+    document.getElementById('settingsGoalTotalWords').addEventListener('input', updateWordsPerDay);
+    document.getElementById('settingsGoalTotalDays').addEventListener('input', updateWordsPerDay);
 
     document.getElementById('startGoalBtn').addEventListener('click', () => {
-        const totalWords = parseInt(document.getElementById('goalTotalWords').value);
-        const totalDays = parseInt(document.getElementById('goalTotalDays').value);
+        const totalWords = parseInt(document.getElementById('settingsGoalTotalWords').value);
+        const totalDays = parseInt(document.getElementById('settingsGoalTotalDays').value);
         
         ipcRenderer.send('set-long-term-goal', {
             enabled: true,
@@ -1476,6 +1486,11 @@
             ipcRenderer.send('disable-goal-prompting');
             hideModal();
         }
+    });
+
+    // Modal close button handler
+    document.getElementById('modalClose').addEventListener('click', () => {
+        hideModal();
     });
 
     // Load current settings
@@ -1676,6 +1691,12 @@
             text: '#3e2f1f',
             accent: '#b8860b',
             card: '#e8e2d5'
+        },
+        crystalline: {
+            background: '#7e6ab4',
+            text: '#ffffff',
+            accent: '#14b8a6',
+            card: '#372e56'
         }
     };
 
@@ -1704,6 +1725,9 @@
                 // Update active button
                 document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
+                
+                // Trigger save bar
+                checkForChanges();
             }
         });
     });

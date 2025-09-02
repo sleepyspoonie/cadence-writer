@@ -653,13 +653,33 @@ ipcMain.on('get-all-files', async (event) => {
         const stats = await fs.stat(filePath);
         const content = await fs.readFile(filePath, 'utf8');
         
-        // Extract text from RTF for word count
+        // Extract text for word count
         let wordCount = 0;
         if (file.endsWith('.rtf')) {
-          const textMatch = content.match(/\{\\rtf1.*?\\f0\\fs24\s*(.*?)\}$/);
-          if (textMatch && textMatch[1]) {
-            const text = textMatch[1].replace(/\\par\s/g, ' ').replace(/\\/g, '');
-            wordCount = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+          try {
+            // These .rtf files are actually JSON from Quill editor
+            const jsonData = JSON.parse(content);
+            if (jsonData.plainText) {
+              const text = jsonData.plainText.trim();
+              if (text.length > 0) {
+                wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+              }
+            }
+            console.log('JSON RTF word count for', file, ':', wordCount);
+          } catch (e) {
+            // If not JSON, treat as traditional RTF
+            let text = content;
+            text = text.replace(/\{\*?\\[^{}]*\}/g, '');
+            text = text.replace(/\\[a-z]+\-?\d*\s?/gi, '');
+            text = text.replace(/[\{\}]/g, '');
+            text = text.replace(/\\par\s*/g, ' ');
+            text = text.replace(/\\'[0-9a-f]{2}/gi, '');
+            text = text.replace(/\\[^a-z]/gi, '');
+            text = text.trim();
+            if (text.length > 0) {
+              wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+            }
+            console.log('Traditional RTF word count for', file, ':', wordCount);
           }
         } else {
           wordCount = content.trim().split(/\s+/).filter(word => word.length > 0).length;

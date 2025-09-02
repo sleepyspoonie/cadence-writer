@@ -133,6 +133,32 @@ class ThemeManager {
                     '--editor-toolbar': '#f9f6f0',
                     '--editor-border': '#e8e2d5'
                 }
+            },
+            crystalline: {
+                name: 'Crystalline',
+                colors: {
+                    '--color-bg-primary': '#7e6ab4',
+                    '--color-bg-secondary': '#372e56',
+                    '--color-bg-tertiary': '#453a6b',
+                    
+                    '--color-text-primary': '#ffffff',
+                    '--color-text-secondary': 'rgba(255, 255, 255, 0.7)',
+                    '--color-text-muted': 'rgba(255, 255, 255, 0.5)',
+                    '--color-text-faint': 'rgba(255, 255, 255, 0.3)',
+                    
+                    '--color-accent': '#14b8a6',
+                    '--color-accent-hover': '#0891b2',
+                    '--color-accent-muted': 'rgba(20, 184, 166, 0.2)',
+                    
+                    '--color-border': 'rgba(255, 255, 255, 0.1)',
+                    '--color-border-hover': 'rgba(255, 255, 255, 0.2)',
+                    '--color-overlay': 'rgba(126, 106, 180, 0.8)',
+                    
+                    '--editor-bg': '#ffffff',
+                    '--editor-text': '#1a1a1a',
+                    '--editor-toolbar': '#fafafa',
+                    '--editor-border': '#e0e0e0'
+                }
             }
         };
 
@@ -181,6 +207,15 @@ class ThemeManager {
                     text: '#3e2f1f',
                     accent: '#b8860b',
                     card: '#e8e2d5'
+                }
+            },
+            crystalline: {
+                name: 'Crystalline',
+                colors: {
+                    background: '#7e6ab4',
+                    text: '#ffffff',
+                    accent: '#14b8a6',
+                    card: '#372e56'
                 }
             }
         };
