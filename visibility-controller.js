@@ -46,10 +46,22 @@ if (!window.visibilityControllerLoaded) {
                 this.hideStatsSidebar();
             }
             
-            // Hide Today's Progress (only on homepage)
-            if (appearanceSettings && appearanceSettings.hideTodayProgress === true && this.isHomepage()) {
-                console.log('Hiding today progress...');
-                this.hideTodayProgress();
+            // Hide Today's Progress with new logic (only on homepage)
+            if (this.isHomepage()) {
+                const shouldHideProgress = this.shouldHideTodayProgress(appearanceSettings, this.settings.longTermGoals);
+                console.log('Today progress visibility check:', {
+                    manualHide: appearanceSettings?.hideTodayProgress,
+                    hasActiveGoal: this.settings.longTermGoals?.enabled && !this.settings.longTermGoals?.completed,
+                    shouldHide: shouldHideProgress
+                });
+                
+                if (shouldHideProgress) {
+                    console.log('Hiding today progress...');
+                    this.hideTodayProgress();
+                } else {
+                    console.log('Showing today progress...');
+                    this.showTodayProgress();
+                }
             }
             
             // Editor visibility settings (only on editor page)
@@ -98,10 +110,38 @@ if (!window.visibilityControllerLoaded) {
             }
         }
         
+        shouldHideTodayProgress(appearanceSettings, longTermGoals) {
+            // If user manually set "Always Hide Today's Progress", respect that choice
+            if (appearanceSettings && appearanceSettings.hideTodayProgress === true) {
+                return true;
+            }
+            
+            // Auto-hide if no active long-term goal
+            // Consider goal inactive if prompting is disabled OR goal is not enabled OR goal is completed
+            const hasActiveGoal = longTermGoals && 
+                                  longTermGoals.enabled && 
+                                  !longTermGoals.completed && 
+                                  !longTermGoals.disablePrompting;  // Add this condition
+            
+            if (!hasActiveGoal) {
+                return true;  // Hide by default when no active goal
+            }
+            
+            // Show when there's an active goal (unless manually hidden)
+            return false;
+        }
+        
         hideTodayProgress() {
             const progressSection = document.querySelector('.progressoverview');
             if (progressSection) {
                 progressSection.style.display = 'none';
+            }
+        }
+        
+        showTodayProgress() {
+            const progressSection = document.querySelector('.progressoverview');
+            if (progressSection) {
+                progressSection.style.display = 'block';
             }
         }
         

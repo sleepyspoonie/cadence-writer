@@ -189,6 +189,39 @@
     
     console.log('Script initialized - waiting for settings...');
     
+    // Celebration modal functions (global scope)
+    function showCelebrationModal() {
+        console.log('showCelebrationModal called');
+        const overlay = document.getElementById('celebrationOverlay');
+        if (!overlay) {
+            console.error('celebrationOverlay element not found!');
+            return;
+        }
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '0';
+        
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+        }, 150);
+    }
+
+    function hideCelebrationModal() {
+        console.log('hideCelebrationModal called');
+        const overlay = document.getElementById('celebrationOverlay');
+        if (!overlay) return;
+        overlay.style.opacity = '0';
+        
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 500);
+    }
+    
+    // Debug: Add window function to manually trigger celebration
+    window.debugShowCelebration = function() {
+        console.log('Manually triggering celebration modal');
+        showCelebrationModal();
+    };
+    
     // Request settings on load
     ipcRenderer.send('get-settings');
     
@@ -300,25 +333,6 @@
             saveCurrentSettings();
         });
 
-        // Add these celebration functions
-        function showCelebrationModal() {
-          const overlay = document.getElementById('celebrationOverlay');
-          overlay.style.display = 'flex';
-          overlay.style.opacity = '0';
-          
-          setTimeout(() => {
-            overlay.style.opacity = '1';
-          }, 150);
-        }
-
-        function hideCelebrationModal() {
-          const overlay = document.getElementById('celebrationOverlay');
-          overlay.style.opacity = '0';
-          
-          setTimeout(() => {
-            overlay.style.display = 'none';
-          }, 500);
-        }
         
         // Save when document option changes
         document.querySelectorAll('input[name="docOption"]').forEach(radio => {
@@ -462,14 +476,49 @@
             statCards[2].querySelector('.stat-value').textContent = `${stats.streak} days`;
         }
         
-        // Update progress bar with today's words
-          updateProgressBar(stats.todayWords);
-          if (stats.goalCompleted) {
-      setTimeout(() => {
-        showCelebrationModal();
-      }, 1000); // Small delay for better UX
-    }
-  });
+        // Set long-term goal data and words from goal start
+        longTermGoal = stats.longTermGoals;
+        totalWordsWritten = stats.wordsFromGoalStart || 0;
+        
+        console.log('Updated longTermGoal:', longTermGoal);
+        console.log('Words from goal start:', totalWordsWritten);
+        
+        // Update progress bar with today's words and goal progress
+        updateProgressBar(stats.todayWords, stats.goalProgressToday);
+        
+        // Show celebration modal if goal completed
+        if (stats.goalCompleted) {
+            setTimeout(() => {
+                showCelebrationModal();
+            }, 1000); // Small delay for better UX
+        }
+        
+        // Show celebration modal for already completed goals on page load (one-time per goal)
+        if (stats.longTermGoals && stats.longTermGoals.completed) {
+            const goalKey = `celebrationShown_${stats.longTermGoals.startDate}`;
+            console.log('Checking celebration modal for completed goal:', {
+                completed: stats.longTermGoals.completed,
+                goalKey: goalKey,
+                alreadyShown: sessionStorage.getItem(goalKey)
+            });
+            
+            if (!sessionStorage.getItem(goalKey)) {
+                sessionStorage.setItem(goalKey, 'true');
+                console.log('Showing celebration modal for completed goal');
+                setTimeout(() => {
+                    showCelebrationModal();
+                }, 2000); // Longer delay for page load
+            }
+        }
+    });
+    
+    // Handle goal completion notification from session end
+    ipcRenderer.on('goal-completed', () => {
+        console.log('Received goal-completed notification');
+        setTimeout(() => {
+            showCelebrationModal();
+        }, 2000); // Longer delay when coming from session
+    });
     
     function applySettings(settings) {
         console.log('Applying settings to UI:', settings);
@@ -557,24 +606,7 @@
         }
     }
 
-    function updateProgressBar() {
-        const progressFill = document.getElementById('progressFill');
-        const currentWords = 0;
-        const goalWords = parseInt(document.getElementById('wordCountSlider').value);
-        const percentage = Math.min((currentWords / goalWords) * 100, 100);
-        
-        progressFill.style.width = percentage + '%';
-        
-        if (percentage < 33) {
-            progressFill.style.background = '#e74c3c';
-        } else if (percentage < 66) {
-            progressFill.style.background = '#f39c12';
-        } else {
-            progressFill.style.background = '#27ae60';
-        }
-        
-        document.querySelector('.progress-text').textContent = `${currentWords} / ${goalWords} words`;
-    }
+    // This function has been moved below to avoid duplication
 
     ipcRenderer.on('fullscreen-changed', (event, isFullscreen) => {
         const btn = document.getElementById('fullscreenToggle');
@@ -632,7 +664,7 @@
 
     let longTermGoal = null;
 
-    function updateProgressBar(todayWords = 0) {
+    function updateProgressBar(todayWords = 0, goalProgressToday = 0) {
         const progressFill = document.getElementById('progressFill');
         const todayProgressText = document.getElementById('todayProgress');
         const goalMetaText = document.getElementById('goalMeta');
@@ -651,21 +683,41 @@
             const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
             const daysRemaining = Math.max(0, longTermGoal.totalDays - daysPassed);
             
-            // Calculate total words written (you'll need to get this from stats)
-            const totalWordsWritten = getCurrentTotalWords(); // We'll implement this
+            // Calculate total words written since goal started
+            const totalWordsFromGoalStart = getCurrentTotalWords();
             
             // Show goal meta info
-            goalMetaText.textContent = `${totalWordsWritten.toLocaleString()} / ${longTermGoal.totalWords.toLocaleString()} total\n${daysRemaining} days left`;
+            if (longTermGoal.completed) {
+                goalMetaText.textContent = `Goal Completed! 🎉\n${totalWordsFromGoalStart.toLocaleString()} / ${longTermGoal.totalWords.toLocaleString()} total`;
+            } else {
+                goalMetaText.textContent = `${totalWordsFromGoalStart.toLocaleString()} / ${longTermGoal.totalWords.toLocaleString()} total\n${daysRemaining} days left`;
+            }
             goalMetaText.style.display = 'block';
         } else {
             goalMetaText.style.display = 'none';
         }
         
-        const percentage = Math.min((todayWords / goalWords) * 100, 100);
+        let displayWords = todayWords;
+        let displayGoal = goalWords;
+        let percentage = Math.min((todayWords / goalWords) * 100, 100);
+        
+        // For long-term goals, show GOAL PROGRESS toward daily target (not total daily words)
+        if (longTermGoal && longTermGoal.enabled) {
+            displayWords = goalProgressToday;  // Use goal progress instead of total daily words
+            displayGoal = dailyGoal;
+            percentage = Math.min((goalProgressToday / dailyGoal) * 100, 100);
+            
+            // If goal is completed, show it as 100% filled
+            if (longTermGoal.completed) {
+                percentage = 100;
+            }
+        }
         
         progressFill.style.width = percentage + '%';
         
-        if (percentage < 33) {
+        if (percentage >= 100) {
+            progressFill.style.background = '#27ae60';
+        } else if (percentage < 33) {
             progressFill.style.background = '#e74c3c';
         } else if (percentage < 66) {
             progressFill.style.background = '#f39c12';
@@ -673,13 +725,13 @@
             progressFill.style.background = '#27ae60';
         }
         
-        todayProgressText.textContent = `${todayWords} / ${goalWords} words`;
+        todayProgressText.textContent = `${displayWords} / ${displayGoal} words`;
     }
 
+    let totalWordsWritten = 0; // Cache the total words globally
+    
     function getCurrentTotalWords() {
-        // This should return the total words from all writing sessions
-        // You might need to request this from the main process
-        return 0; // Placeholder
+        return totalWordsWritten;
     }
 
     updateProgressBar();

@@ -536,6 +536,69 @@
     .toggle-slider.disabled:before {
         background-color: #999 !important;
     }
+
+    /* Sticky save button */
+    .sticky-save-section {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: var(--color-bg-primary);
+        border-top: 2px solid var(--color-accent);
+        padding: 1rem 2rem;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        transform: translateY(100%);
+        opacity: 0;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .sticky-save-section.show {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    .sticky-save-button {
+        padding: 0.875rem 3rem;
+        background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        margin-right: 1rem;
+    }
+
+    .sticky-save-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(20, 184, 166, 0.4);
+    }
+
+    .unsaved-changes-text {
+        color: var(--color-accent);
+        font-size: 0.9rem;
+        margin-left: 1rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .unsaved-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--color-accent);
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
+    }
 </style>
 </head>
 <body>
@@ -583,8 +646,8 @@
             
             <div class="setting-item">
                 <div class="setting-info">
-                    <span class="setting-label">Hide Today's Progress</span>
-                    <span class="setting-description">Hide the progress bar on homepage</span>
+                    <span class="setting-label">Always Hide Today's Progress</span>
+                    <span class="setting-description">Permanently hide progress bar (overrides auto-show for goals)</span>
                 </div>
                 <div class="setting-control">
                     <label class="toggle-switch">
@@ -604,6 +667,16 @@
                         <input type="checkbox" id="disableLongTermGoals">
                         <span class="toggle-slider"></span>
                     </label>
+                </div>
+            </div>
+            
+            <div class="setting-item">
+                <div class="setting-info">
+                    <span class="setting-label">Reset Current Goal</span>
+                    <span class="setting-description">Delete current goal progress and start over</span>
+                </div>
+                <div class="setting-control">
+                    <button class="browse-btn" id="resetGoalBtn" style="background: #dc2626; color: white; border-color: #dc2626;">Reset Goal</button>
                 </div>
             </div>
         </div>
@@ -1006,6 +1079,15 @@
         </div>
     </div>
 
+    <!-- Sticky Save Button for Unsaved Changes -->
+    <div class="sticky-save-section" id="stickySaveSection">
+        <button class="sticky-save-button" id="stickySaveButton">Save Settings</button>
+        <span class="unsaved-changes-text">
+            <span class="unsaved-indicator"></span>
+            You have unsaved changes
+        </span>
+    </div>
+
 
     <!-- Long-term Goal Setup Modal -->
     <div class="goal-overlay" id="goalOverlay" style="display: none;">
@@ -1044,37 +1126,100 @@
 <script>
     const { ipcRenderer } = require('electron');
     
-    // Add this function definition first
+    // Track unsaved changes
+    let originalSettings = {};
+    let hasUnsavedChanges = false;
+    
+    // Function to capture current form state
+    function captureCurrentSettings() {
+        const currentSettings = {
+            // Files & Storage
+            documentsFolder: document.getElementById('currentPath').textContent,
+            
+            // Long-term Goals
+            hideTodayProgress: document.getElementById('hideTodayProgress').checked,
+            disableLongTermGoals: document.getElementById('disableLongTermGoals').checked,
+            
+            // Appearance
+            theme: document.querySelector('input[name="theme"]:checked')?.value,
+            bgColor: document.getElementById('bgColor').value,
+            textColor: document.getElementById('textColor').value,
+            accentColor: document.getElementById('accentColor').value,
+            cardColor: document.getElementById('cardColor').value,
+            hideStatsPage: document.getElementById('hideStatsPage').checked,
+            hideStatsSidebar: document.getElementById('hideStatsSidebar').checked,
+            
+            // Editor
+            fontSize: document.getElementById('fontSize').value,
+            fontFamily: document.getElementById('fontFamily').value,
+            hideTimer: document.getElementById('hideTimer').checked,
+            hideWordCount: document.getElementById('hideWordCount').checked,
+            typewriterSound: document.getElementById('typewriterSound').checked,
+            autoFullscreen: document.getElementById('autoFullscreen').checked,
+            lockExit: document.getElementById('lockExit').checked,
+            
+            // Gamification
+            writingMode: document.querySelector('input[name="writingMode"]:checked')?.value,
+            rewardWords: document.getElementById('rewardWords').value,
+            rewardType: document.querySelector('input[name="rewardType"]:checked')?.value,
+            gracePeriod: document.getElementById('gracePeriod').value,
+            punishType: document.querySelector('input[name="punishType"]:checked')?.value,
+            hardcoreMode: document.getElementById('hardcoreMode').checked,
+            disableStreak: document.getElementById('disableStreak').checked,
+            disableAchievements: document.getElementById('disableAchievements').checked
+        };
+        
+        return currentSettings;
+    }
+    
+    // Function to check if settings have changed
+    function checkForChanges() {
+        const currentSettings = captureCurrentSettings();
+        const changed = JSON.stringify(originalSettings) !== JSON.stringify(currentSettings);
+        
+        if (changed !== hasUnsavedChanges) {
+            hasUnsavedChanges = changed;
+            updateStickySaveButton();
+        }
+    }
+    
+    // Function to show/hide sticky save button
+    function updateStickySaveButton() {
+        const stickySaveSection = document.getElementById('stickySaveSection');
+        if (hasUnsavedChanges) {
+            stickySaveSection.classList.add('show');
+        } else {
+            stickySaveSection.classList.remove('show');
+        }
+    }
+    
+    // Function to mark settings as saved (reset original state)
+    function markSettingsAsSaved() {
+        originalSettings = captureCurrentSettings();
+        hasUnsavedChanges = false;
+        updateStickySaveButton();
+    }
+    
+    // Updated function for new visibility logic
     function updateTodayProgressState() {
-        const disableLongTermGoals = document.getElementById('disableLongTermGoals');
+        // The "Always Hide Today's Progress" toggle is now independent
+        // It's always enabled and represents user's permanent choice
+        // No automatic forcing based on goal prompting state
+        
         const hideTodayProgressToggle = document.getElementById('hideTodayProgress');
         const hideTodayProgressParent = hideTodayProgressToggle.closest('.setting-item');
-        const toggleSlider = hideTodayProgressToggle.nextElementSibling; // The .toggle-slider element
         
-        if (disableLongTermGoals && hideTodayProgressToggle && hideTodayProgressParent) {
-            if (disableLongTermGoals.checked) {
-                hideTodayProgressToggle.checked = true;
-                hideTodayProgressToggle.disabled = true;
-                hideTodayProgressParent.style.opacity = '0.5';
-                hideTodayProgressParent.style.cursor = 'not-allowed';
-                hideTodayProgressParent.title = 'This setting is disabled because long-term goal prompting is turned off';
-                
-                // Grey out the toggle slider
-                if (toggleSlider) {
-                    toggleSlider.classList.add('disabled');
-                    toggleSlider.style.pointerEvents = 'none';
-                }
-            } else {
-                hideTodayProgressToggle.disabled = false;
-                hideTodayProgressParent.style.opacity = '1';
-                hideTodayProgressParent.style.cursor = 'default';
-                hideTodayProgressParent.title = '';
-                
-                // Restore the toggle slider
-                if (toggleSlider) {
-                    toggleSlider.classList.remove('disabled');
-                    toggleSlider.style.pointerEvents = 'auto';
-                }
+        if (hideTodayProgressToggle && hideTodayProgressParent) {
+            // Always keep it enabled - user has full control
+            hideTodayProgressToggle.disabled = false;
+            hideTodayProgressParent.style.opacity = '1';
+            hideTodayProgressParent.style.cursor = 'default';
+            hideTodayProgressParent.title = '';
+            
+            const toggleSlider = hideTodayProgressToggle.nextElementSibling;
+            if (toggleSlider) {
+                toggleSlider.classList.remove('disabled');
+                toggleSlider.style.pointerEvents = 'auto';
             }
         }
     }
@@ -1214,6 +1359,31 @@
         if (!this.checked) {
             ipcRenderer.send('enable-goal-prompting');
             showModal();
+        }
+    });
+
+    // Reset goal button handler
+    document.getElementById('resetGoalBtn').addEventListener('click', function() {
+        const confirmed = confirm('Are you sure you want to reset your current long-term goal?\n\nThis will:\n• Delete all progress data for your current goal\n• Remove goal tracking from your homepage\n• Allow you to set up a new goal immediately\n\nThis action cannot be undone.');
+        
+        if (confirmed) {
+            ipcRenderer.send('reset-long-term-goal');
+            
+            // Show success message
+            const resetBtn = document.getElementById('resetGoalBtn');
+            const originalText = resetBtn.textContent;
+            resetBtn.textContent = 'Goal Reset!';
+            resetBtn.style.background = '#16a34a';
+            resetBtn.disabled = true;
+            
+            setTimeout(() => {
+                resetBtn.textContent = originalText;
+                resetBtn.style.background = '#dc2626';
+                resetBtn.disabled = false;
+                
+                // Show the goal setup modal after reset
+                showModal();
+            }, 2000);
         }
     });
 
@@ -1386,6 +1556,11 @@
         }
 
         updateTodayProgressState();
+        
+        // Capture original settings after loading
+        setTimeout(() => {
+            originalSettings = captureCurrentSettings();
+        }, 100);
     });
 
     // Save settings
@@ -1443,6 +1618,9 @@
         setTimeout(() => {
             saveMessage.classList.remove('show');
         }, 3000);
+        
+        // Mark as saved (hide sticky button)
+        markSettingsAsSaved();
     });
 
     // Fullscreen toggle
@@ -1532,6 +1710,34 @@
 
     // Show focus mode config by default
     document.getElementById('focusConfig').classList.add('active');
+    
+    // Add change tracking to all form elements
+    function addChangeTracking() {
+        // Track all checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', checkForChanges);
+        });
+        
+        // Track all radio buttons
+        document.querySelectorAll('input[type="radio"]').forEach(radio => {
+            radio.addEventListener('change', checkForChanges);
+        });
+        
+        // Track all text inputs, number inputs, and selects
+        document.querySelectorAll('input[type="text"], input[type="number"], input[type="range"], input[type="color"], select').forEach(input => {
+            input.addEventListener('input', checkForChanges);
+            input.addEventListener('change', checkForChanges);
+        });
+    }
+    
+    // Initialize change tracking after a short delay
+    setTimeout(addChangeTracking, 200);
+    
+    // Wire up sticky save button
+    document.getElementById('stickySaveButton').addEventListener('click', () => {
+        // Use the same save logic as the main save button
+        document.getElementById('saveSettings').click();
+    });
 </script>
 
    <script src="visibility-controller.js"></script>

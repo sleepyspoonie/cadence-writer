@@ -350,8 +350,31 @@ ipcMain.on('session-completed', async (event, data) => {
   await saveStats(stats);
   
   const streak = calculateStreak(stats.dailyStats);
-  const prefs = store.get('userPreferences');
+  let prefs = store.get('userPreferences');
   store.set('userPreferences', { ...prefs, currentStreak: streak });
+  
+  // Check for goal completion after session
+  if (prefs.longTermGoals && prefs.longTermGoals.enabled && !prefs.longTermGoals.completed) {
+    const goalCompleted = checkGoalCompletion(stats, prefs.longTermGoals);
+    
+    if (goalCompleted) {
+      console.log('Goal completed after session! Marking as completed...');
+      const updatedPrefs = {
+        ...prefs,
+        longTermGoals: {
+          ...prefs.longTermGoals,
+          completed: true,
+          completedDate: new Date().toISOString()
+        }
+      };
+      store.set('userPreferences', updatedPrefs);
+      
+      // Send notification to homepage that goal was completed
+      if (mainWindow) {
+        mainWindow.webContents.send('goal-completed');
+      }
+    }
+  }
   
   console.log('Session saved - New words added to stats:', newWordsWritten);
 });
@@ -418,10 +441,39 @@ ipcMain.on('get-homepage-stats', async (event) => {
   
   const prefs = store.get('userPreferences');
   
-  // Check for goal completion
+  // Check for goal completion and calculate words since goal start
   let goalCompleted = false;
-  if (prefs.longTermGoals) {
+  let wordsFromGoalStart = 0;
+  let goalProgressToday = 0;  // Words written toward goal today
+  
+  if (prefs.longTermGoals && prefs.longTermGoals.enabled) {
     goalCompleted = checkGoalCompletion(stats, prefs.longTermGoals);
+    
+    // Calculate words written since goal started
+    const goalStartDate = new Date(prefs.longTermGoals.startDate);
+    if (stats.sessionLogs) {
+      stats.sessionLogs.forEach(session => {
+        const sessionDate = new Date(session.time);
+        if (sessionDate >= goalStartDate) {
+          wordsFromGoalStart += session.newWords || 0;
+          
+          // Count today's words toward goal
+          const sessionDay = `${sessionDate.getFullYear()}-${String(sessionDate.getMonth() + 1).padStart(2, '0')}-${String(sessionDate.getDate()).padStart(2, '0')}`;
+          if (sessionDay === today) {
+            goalProgressToday += session.newWords || 0;
+          }
+        }
+      });
+    }
+    
+    console.log('Goal completion check:', {
+      enabled: prefs.longTermGoals.enabled,
+      completed: prefs.longTermGoals.completed,
+      goalCompleted: goalCompleted,
+      totalWords: totalWords,
+      wordsFromGoalStart: wordsFromGoalStart,
+      goalTarget: prefs.longTermGoals.totalWords
+    });
     
     if (goalCompleted && !prefs.longTermGoals.completed) {
       // Mark as completed so we don't show again
@@ -434,6 +486,7 @@ ipcMain.on('get-homepage-stats', async (event) => {
         }
       };
       store.set('userPreferences', updatedPrefs);
+      console.log('Goal marked as completed!');
     }
   }
   
@@ -441,8 +494,11 @@ ipcMain.on('get-homepage-stats', async (event) => {
     todayWords: todayStats.words,
     weekWords: weekWords,
     totalWords: totalWords,
+    wordsFromGoalStart: wordsFromGoalStart,
+    goalProgressToday: goalProgressToday,  // Words toward goal today
     streak: prefs.currentStreak || 0,
-    goalCompleted: goalCompleted // Add this flag
+    goalCompleted: goalCompleted,
+    longTermGoals: prefs.longTermGoals // Send the long-term goal data
   });
 });
 
@@ -547,7 +603,7 @@ async function initializeStore() {
           },
           hideStatsPage: false,
           hideStatsSidebar: false,
-          hideTodayProgress: true
+          hideTodayProgress: false  // Default to false, let visibility controller handle auto-hide
         },
         gamificationSettings: {
           mode: 'focus',
@@ -868,16 +924,22 @@ ipcMain.on('check-goal-setup', (event) => {
 // Set long-term goal
 ipcMain.on('set-long-term-goal', (event, goalData) => {
   const settings = store.get('userPreferences');
+  
+  // Ensure the new goal is not marked as completed
+  const newGoalData = {
+    ...goalData,
+    completed: false,
+    completedDate: null
+  };
+  
   const updatedSettings = {
     ...settings,
-    longTermGoals: goalData,
-    appearanceSettings: {
-      ...settings.appearanceSettings,
-      hideTodayProgress: false  // Show progress when goal is set
-    }
+    longTermGoals: newGoalData
+    // No longer automatically modify hideTodayProgress
+    // The visibility controller will handle auto-show/hide logic
   };
   store.set('userPreferences', updatedSettings);
-  console.log('Long-term goal set:', goalData);
+  console.log('Long-term goal set:', newGoalData);
 });
 
 // Disable goal prompting
@@ -888,11 +950,9 @@ ipcMain.on('disable-goal-prompting', (event) => {
     longTermGoals: {
       ...settings.longTermGoals,
       disablePrompting: true
-    },
-    appearanceSettings: {
-      ...settings.appearanceSettings,
-      hideTodayProgress: true  // Hide progress when disabled
     }
+    // No longer automatically modify hideTodayProgress
+    // The visibility controller will handle auto-hide when no active goal
   };
   store.set('userPreferences', updatedSettings);
   console.log('Goal prompting disabled');
@@ -917,19 +977,31 @@ function checkGoalCompletion(stats, longTermGoals) {
   const daysPassed = Math.ceil((today - startDate) / (1000 * 60 * 60 * 24));
   
   // Calculate total words written since goal started
+  // Only count words from sessions that started after the goal was set
   let totalWordsWritten = 0;
-  Object.entries(stats.dailyStats || {}).forEach(([date, dayData]) => {
-    const statsDate = new Date(date);
-    if (statsDate >= startDate) {
-      totalWordsWritten += dayData.words || 0;
-    }
+  
+  if (stats.sessionLogs) {
+    stats.sessionLogs.forEach(session => {
+      const sessionDate = new Date(session.time);
+      if (sessionDate >= startDate) {
+        totalWordsWritten += session.newWords || 0;
+      }
+    });
+  }
+  
+  console.log('Goal completion calculation:', {
+    startDate: startDate.toISOString(),
+    totalWordsFromSessions: totalWordsWritten,
+    wordGoalTarget: longTermGoals.totalWords,
+    daysPassed,
+    maxDays: longTermGoals.totalDays
   });
   
-  // Goal completed if we hit word target OR time limit
+  // Goal completed ONLY if we hit word target (not time limit)
+  // Time limit is just for daily pace calculation, not auto-completion
   const wordGoalMet = totalWordsWritten >= longTermGoals.totalWords;
-  const timeGoalMet = daysPassed >= longTermGoals.totalDays;
   
-  return wordGoalMet || timeGoalMet;
+  return wordGoalMet;
 }
 
 // Add this IPC handler
@@ -940,12 +1012,74 @@ ipcMain.on('disable-long-term-goals', (event) => {
     longTermGoals: {
       enabled: false,
       disablePrompting: true
-    },
-    appearanceSettings: {
-      ...settings.appearanceSettings,
-      hideTodayProgress: true
     }
+    // No longer automatically modify hideTodayProgress
+    // The visibility controller will handle auto-hide when no active goal
   };
   store.set('userPreferences', updatedSettings);
   console.log('Long-term goals disabled after completion');
+});
+
+// Reset long-term goal handler
+ipcMain.on('reset-long-term-goal', async (event) => {
+  try {
+    const settings = store.get('userPreferences');
+    
+    // Reset long-term goals to default state
+    const updatedSettings = {
+      ...settings,
+      longTermGoals: {
+        enabled: false,
+        totalWords: 50000,
+        totalDays: 30,
+        startDate: null,
+        disablePrompting: false,
+        completed: false,
+        completedDate: null
+      }
+      // No longer automatically modify hideTodayProgress
+      // The visibility controller will handle auto-hide when no active goal
+    };
+    
+    // Also clear goal-related stats data
+    const stats = await loadStats();
+    
+    // Find when the current goal started
+    const currentGoal = settings.longTermGoals;
+    if (currentGoal && currentGoal.startDate) {
+      const goalStartDate = new Date(currentGoal.startDate);
+      
+      // Remove daily stats entries from goal start date onwards
+      // This preserves pre-goal writing data
+      Object.keys(stats.dailyStats || {}).forEach(dateStr => {
+        const statsDate = new Date(dateStr);
+        if (statsDate >= goalStartDate) {
+          // Reset the words for this day to 0 but keep sessions and timeSpent
+          // This way we preserve that writing happened but reset word count progress
+          if (stats.dailyStats[dateStr]) {
+            stats.dailyStats[dateStr].words = 0;
+          }
+        }
+      });
+      
+      // Remove session logs from goal start date onwards
+      if (stats.sessionLogs) {
+        stats.sessionLogs = stats.sessionLogs.filter(session => {
+          const sessionDate = new Date(session.time);
+          return sessionDate < goalStartDate;
+        });
+      }
+      
+      await saveStats(stats);
+      console.log('Goal-related stats data cleared from', goalStartDate.toISOString());
+    }
+    
+    store.set('userPreferences', updatedSettings);
+    console.log('Long-term goal reset successfully');
+    
+    event.reply('goal-reset-complete');
+  } catch (error) {
+    console.error('Error resetting long-term goal:', error);
+    event.reply('goal-reset-error', error.message);
+  }
 });
