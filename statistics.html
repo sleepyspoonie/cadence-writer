@@ -27,7 +27,7 @@ header {
 .stats-container {
     flex: 1;
     padding: 3rem;
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
 }
@@ -41,17 +41,69 @@ h1 {
 /* Summary Cards */
 .summary-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 0.8rem;
     margin-bottom: 3rem;
+    align-items: stretch;
+}
+
+@media (min-width: 600px) {
+    .summary-grid {
+        gap: 1rem;
+    }
+}
+
+@media (min-width: 800px) {
+    .summary-grid {
+        gap: 1.2rem;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+}
+
+@media (min-width: 1000px) and (max-width: 1299px) {
+    .summary-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1.2rem;
+    }
+}
+
+@media (min-width: 1300px) {
+    .summary-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 1.5rem;
+    }
+    
+    .summary-card {
+        padding: 1.5rem;
+    }
 }
 
 .summary-card {
     background: linear-gradient(135deg, var(--color-bg-secondary) 0%, var(--color-bg-tertiary) 100%);
     border-radius: 12px;
-    padding: 1.5rem;
+    padding: 0.5rem;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
     border: 1px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 120px;
+}
+
+@media (min-width: 600px) {
+    .summary-card {
+        padding: 0.8rem;
+        min-height: 140px;
+    }
+}
+
+@media (min-width: 800px) {
+    .summary-card {
+        padding: 1rem;
+        min-height: 160px;
+    }
 }
 
 .summary-card.highlight {
@@ -312,10 +364,11 @@ h1 {
     margin-bottom: 0.5rem;
 }
 
-.achievement-name {
+.achievement h4, .achievement-item h4 {
     font-size: 0.85rem;
-    color: var(--color-text-primary);
+    color: var(--color-accent);
     margin-bottom: 0.25rem;
+    margin-top: 0;
 }
 
 .achievement-desc {
@@ -325,6 +378,103 @@ h1 {
 
 .achievement.unlocked .achievement-desc {
     color: var(--color-accent);
+}
+
+/* Achievements Modal */
+.overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+}
+
+.overlay.show {
+    display: block;
+}
+
+.achievements-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--color-bg-primary);
+    padding: 2rem;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--color-border);
+    z-index: 1000;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    min-width: 600px;
+}
+
+.achievements-modal.show {
+    display: block;
+}
+
+.achievements-modal h2 {
+    color: var(--color-text-primary);
+    margin-bottom: 1.5rem;
+    font-size: 1.75rem;
+    text-align: center;
+}
+
+.achievements-modal-content {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.achievements-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.achievements-section {
+    background: var(--color-bg-secondary);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.achievements-section h3 {
+    margin-bottom: 1rem;
+    color: var(--color-accent);
+    font-size: 1.25rem;
+}
+
+.achievements-section .achievements-grid {
+    margin-top: 0;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--color-text-muted);
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: var(--color-accent);
+    color: #000;
+    border-color: var(--color-accent);
 }
 
 /* Calendar */
@@ -457,10 +607,52 @@ h1 {
             </div>
             
             <div class="summary-card">
+                <div class="card-icon">⚡</div>
+                <div class="card-label">Avg Words/Minute</div>
+                <div class="card-value">0.0</div>
+                <div class="card-subtext">writing speed</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">📊</div>
+                <div class="card-label">Avg Words/Session</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">per writing session</div>
+            </div>
+            
+            <div class="summary-card">
                 <div class="card-icon">📅</div>
-                <div class="card-label">Sessions</div>
+                <div class="card-label">Total Sessions</div>
                 <div class="card-value">34</div>
-                <div class="card-subtext">This month</div>
+                <div class="card-subtext">All time</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">✅</div>
+                <div class="card-label">Successful Sessions</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">goals achieved</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">❌</div>
+                <div class="card-label">Ragequits</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">sessions abandoned</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">🎯</div>
+                <div class="card-label">Long-term Goals</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">completed</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">🏆</div>
+                <div class="card-label">Achievements</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">unlocked</div>
             </div>
             
             <div class="summary-card">
@@ -468,6 +660,41 @@ h1 {
                 <div class="card-label">Writing Time</div>
                 <div class="card-value">14.5</div>
                 <div class="card-subtext">hours this week</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">🎁</div>
+                <div class="card-label">Total Rewards</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">earned</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">⚡</div>
+                <div class="card-label">Total Consequences</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">faced</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">💥</div>
+                <div class="card-label">Words Nuked</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">by nuclear mode</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">📈</div>
+                <div class="card-label">Best Day</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">words in one day</div>
+            </div>
+            
+            <div class="summary-card">
+                <div class="card-icon">🔢</div>
+                <div class="card-label">Avg Session Length</div>
+                <div class="card-value">0</div>
+                <div class="card-subtext">minutes per session</div>
             </div>
         </div>
         
@@ -541,39 +768,31 @@ h1 {
         </div>
         
         <!-- Achievements -->
-        <div class="sessions-section" style="margin-top: 2rem;">
-            <h3 class="section-header">Achievements</h3>
-            <div class="achievements-grid">
-                <div class="achievement unlocked">
-                    <div class="achievement-icon">🎯</div>
-                    <div class="achievement-name">First Words</div>
-                    <div class="achievement-desc">Write your first 100 words</div>
-                </div>
-                <div class="achievement unlocked">
-                    <div class="achievement-icon">⚡</div>
-                    <div class="achievement-name">Speed Writer</div>
-                    <div class="achievement-desc">500 words in one session</div>
-                </div>
-                <div class="achievement unlocked">
-                    <div class="achievement-icon">🔥</div>
-                    <div class="achievement-name">On Fire</div>
-                    <div class="achievement-desc">7 day streak</div>
-                </div>
+        <div class="sessions-section" id="achievementsSection" style="margin-top: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 class="section-header" style="margin-bottom: 0;">Achievements</h3>
+                <button class="period-btn" id="viewAllAchievements" style="cursor: pointer;">
+                    View All <span id="lockedCount">0</span> Locked &gt;
+                </button>
+            </div>
+            <div class="achievements-grid" id="achievementsGrid">
                 <div class="achievement">
                     <div class="achievement-icon">🏆</div>
-                    <div class="achievement-name">Novelist</div>
-                    <div class="achievement-desc">Write 50,000 words total</div>
+                    <h4>No achievements yet</h4>
+                    <div class="achievement-desc">Start writing to unlock your first achievement!</div>
                 </div>
-                <div class="achievement">
-                    <div class="achievement-icon">💎</div>
-                    <div class="achievement-name">Dedicated</div>
-                    <div class="achievement-desc">30 day streak</div>
-                </div>
-                <div class="achievement">
-                    <div class="achievement-icon">🌟</div>
-                    <div class="achievement-name">Marathon</div>
-                    <div class="achievement-desc">Write for 2 hours straight</div>
-                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Achievements Modal -->
+    <div class="overlay" id="achievementsOverlay"></div>
+    <div class="achievements-modal" id="achievementsModal">
+        <button class="modal-close" id="closeAchievementsModal">&times;</button>
+        <h2>All Achievements</h2>
+        <div class="achievements-modal-content">
+            <div class="achievements-sections" id="achievementsSections">
+                <!-- Achievement sections will be populated dynamically by category -->
             </div>
         </div>
     </div>
@@ -588,7 +807,30 @@ h1 {
     let firstDataDate = null;
     
     // Wait for DOM to be ready
+    console.log('Statistics page script loading...');
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM Content Loaded - statistics page ready');
+        
+        // Check if achievements are disabled and hide the section if so
+        ipcRenderer.send('get-settings');
+        ipcRenderer.on('load-settings', (event, settings) => {
+            if (settings?.gamificationSettings?.disableAchievements) {
+                // Hide the achievements section
+                const achievementsSection = document.getElementById('achievementsSection');
+                if (achievementsSection) {
+                    achievementsSection.style.display = 'none';
+                }
+                
+                // Hide the achievements modal
+                const achievementsModal = document.getElementById('achievementsModal');
+                const achievementsOverlay = document.getElementById('achievementsOverlay');
+                if (achievementsModal) achievementsModal.style.display = 'none';
+                if (achievementsOverlay) achievementsOverlay.style.display = 'none';
+            }
+        });
+        
+        // Track page visit for achievements
+        ipcRenderer.send('page-visited', 'stats');
         
         // Fullscreen toggle
         document.getElementById('fullscreenToggle').addEventListener('click', () => {
@@ -604,6 +846,20 @@ h1 {
         document.getElementById('nextMonth').addEventListener('click', () => {
             currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
             renderCalendar();
+        });
+        
+        // View All Achievements button
+        document.getElementById('viewAllAchievements').addEventListener('click', () => {
+            showAchievementsModal();
+        });
+        
+        // Modal close handlers
+        document.getElementById('closeAchievementsModal').addEventListener('click', () => {
+            hideAchievementsModal();
+        });
+        
+        document.getElementById('achievementsOverlay').addEventListener('click', () => {
+            hideAchievementsModal();
         });
         
         // Period buttons - Set up ONLY ONCE
@@ -629,8 +885,201 @@ h1 {
         });
         
         // Request initial data
+        console.log('Requesting detailed stats...');
         ipcRenderer.send('get-detailed-stats');
     });
+    
+    function updateAchievements(achievementsData) {
+        const achievementsGrid = document.getElementById('achievementsGrid');
+        const lockedCountSpan = document.getElementById('lockedCount');
+        
+        if (!achievementsData || !achievementsData.unlocked) {
+            return;
+        }
+        
+        // Store data for modal
+        allAchievementsData = achievementsData;
+        
+        const unlockedAchievements = achievementsData.unlocked || [];
+        const totalLocked = (achievementsData.locked || []).length;
+        
+        // Update locked count
+        lockedCountSpan.textContent = totalLocked;
+        
+        // Clear current achievements
+        achievementsGrid.innerHTML = '';
+        
+        if (unlockedAchievements.length === 0) {
+            // Show placeholder when no achievements unlocked
+            achievementsGrid.innerHTML = `
+                <div class="achievement">
+                    <div class="achievement-icon">🏆</div>
+                    <h4>No achievements yet</h4>
+                    <div class="achievement-desc">Start writing to unlock your first achievement!</div>
+                </div>
+            `;
+        } else {
+            // Display unlocked achievements
+            unlockedAchievements.forEach(achievement => {
+                const achievementElement = document.createElement('div');
+                achievementElement.className = 'achievement unlocked';
+                achievementElement.innerHTML = `
+                    <div class="achievement-icon">${achievement.icon}</div>
+                    <h4>${achievement.name}</h4>
+                    <div class="achievement-desc">${achievement.description}</div>
+                `;
+                achievementsGrid.appendChild(achievementElement);
+            });
+        }
+    }
+    
+    let allAchievementsData = null;
+    
+    function showAchievementsModal() {
+        if (!allAchievementsData) {
+            console.log('No achievements data available');
+            return;
+        }
+        
+        populateAchievementsModal(allAchievementsData);
+        document.getElementById('achievementsOverlay').classList.add('show');
+        document.getElementById('achievementsModal').classList.add('show');
+    }
+    
+    function hideAchievementsModal() {
+        document.getElementById('achievementsOverlay').classList.remove('show');
+        document.getElementById('achievementsModal').classList.remove('show');
+    }
+    
+    function populateAchievementsModal(achievementsData) {
+        const sectionsContainer = document.getElementById('achievementsSections');
+        
+        // Clear existing content
+        sectionsContainer.innerHTML = '';
+        
+        // Define achievement categories in order
+        const categories = [
+            {
+                name: 'Word Count Milestones',
+                ids: ['firstWords', 'drabbler', 'firstDraft', 'findingVoice', 'juniorNovelist', 'shortStoryteller', 'mightierThanSword', 'certifiedNovelist', 'author']
+            },
+            {
+                name: 'Writing Streaks', 
+                ids: ['firstStep', 'sprinter', 'brickByBrick', 'wrimoEnthusiast', 'unstoppableForce', 'eternalFlame', 'yearOfWriter']
+            },
+            {
+                name: 'Time-Based Writing',
+                ids: ['warmingUp', 'inTheZone', 'firstWatch', 'theGrind', 'throughTheNight', 'dayOfWriting', 'flowState', 'centuryScribe']
+            },
+            {
+                name: 'Navigation & Exploration',
+                ids: ['eruditeEducator', 'dataAnalyst', 'fileExplorer', 'tinkerer']
+            },
+            {
+                name: 'Writing Modes',
+                ids: ['treatYourself', 'gluttonPunishment', 'masochist']
+            },
+            {
+                name: 'Session Performance',
+                ids: ['speedWriter', 'marathoner', 'weekendWarrior', 'comebackKid', 'phoenix', 'dabbler']
+            },
+            {
+                name: 'Time-Specific Writing',
+                ids: ['earlyBird', 'nightOwl', 'lunchBreakNovelist', 'mondayMotivation', 'humpDay', 'fridayFinale', 'witchingHour', 'deadlinePanic']
+            },
+            {
+                name: 'File & Project Management',
+                ids: ['collector']
+            },
+            {
+                name: 'Meta Achievements',
+                ids: ['overachiever', 'completionist', 'legend', 'hiddenTalent']
+            },
+            {
+                name: 'Long-Term Goals',
+                ids: ['itsTheClimb', 'valleyOfDeath', 'mountaineer', 'summitter']
+            },
+            {
+                name: 'Hidden Achievements',
+                ids: ['silentTreatment', 'maybeNextTime', 'priceFixing', 'procrastinatorSpecial', 'saveScummer', 'blastOff', 'leapOfFaith']
+            }
+        ];
+        
+        // Group achievements by category
+        categories.forEach(category => {
+            const categoryAchievements = {
+                unlocked: [],
+                locked: []
+            };
+            
+            // Collect achievements for this category
+            category.ids.forEach(id => {
+                const unlockedAchievement = achievementsData.unlocked?.find(a => a.id === id);
+                const lockedAchievement = achievementsData.locked?.find(a => a.id === id);
+                
+                if (unlockedAchievement) {
+                    categoryAchievements.unlocked.push(unlockedAchievement);
+                } else if (lockedAchievement) {
+                    categoryAchievements.locked.push(lockedAchievement);
+                }
+            });
+            
+            // Only show categories that have achievements
+            if (categoryAchievements.unlocked.length > 0 || categoryAchievements.locked.length > 0) {
+                const sectionElement = document.createElement('div');
+                sectionElement.className = 'achievements-section';
+                
+                const sectionTitle = document.createElement('h3');
+                sectionTitle.textContent = category.name;
+                sectionElement.appendChild(sectionTitle);
+                
+                const gridElement = document.createElement('div');
+                gridElement.className = 'achievements-grid';
+                
+                // Add unlocked achievements first
+                categoryAchievements.unlocked.forEach(achievement => {
+                    const achievementElement = document.createElement('div');
+                    achievementElement.className = 'achievement unlocked';
+                    achievementElement.innerHTML = `
+                        <div class="achievement-icon">${achievement.icon}</div>
+                        <h4>${achievement.name}</h4>
+                        <div class="achievement-desc">${achievement.description}</div>
+                    `;
+                    gridElement.appendChild(achievementElement);
+                });
+                
+                // Then add locked achievements
+                categoryAchievements.locked.forEach(achievement => {
+                    const achievementElement = document.createElement('div');
+                    achievementElement.className = 'achievement';
+                    achievementElement.innerHTML = `
+                        <div class="achievement-icon">${achievement.icon}</div>
+                        <h4>${achievement.name}</h4>
+                        <div class="achievement-desc">${achievement.description}</div>
+                    `;
+                    gridElement.appendChild(achievementElement);
+                });
+                
+                sectionElement.appendChild(gridElement);
+                sectionsContainer.appendChild(sectionElement);
+            }
+        });
+        
+        // Show message if no achievements at all
+        if (sectionsContainer.children.length === 0) {
+            sectionsContainer.innerHTML = `
+                <div class="achievements-section">
+                    <div class="achievements-grid">
+                        <div class="achievement">
+                            <div class="achievement-icon">🏆</div>
+                            <h4>No achievements yet</h4>
+                            <div class="achievement-desc">Start writing to unlock your first achievement!</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
     
     function updateWordsChart(dailyData) {
     const chartContainer = document.querySelector('.chart-placeholder');
@@ -830,7 +1279,13 @@ h1 {
     
     // Data listener
     ipcRenderer.on('detailed-stats', (event, data) => {
-        console.log('Stats received:', data);
+        console.log('*** STATS RECEIVED ***');
+        console.log('Data:', data);
+        console.log('Data type:', typeof data);
+        console.log('Data keys:', Object.keys(data || {}));
+        console.log('dailyData length:', data.dailyData?.length);
+        console.log('allTime:', data.allTime);
+        console.log('streak:', data.streak);
         
         // Store data
         currentDailyData = data.dailyData || [];
@@ -846,21 +1301,87 @@ h1 {
             }
         });
         
-        // Update summary cards
-        document.querySelector('.summary-card:nth-child(1) .card-value').textContent = data.streak || 0;
-        document.querySelector('.summary-card:nth-child(2) .card-value').textContent = (data.allTime?.words || 0).toLocaleString();
-        document.querySelector('.summary-card:nth-child(3) .card-value').textContent = data.month?.sessions || 0;
-        document.querySelector('.summary-card:nth-child(4) .card-value').textContent = ((data.week?.minutes || 0) / 60).toFixed(1);
+        // Update summary cards in new order
+        try {
+            // Test if summary cards exist
+            const allCards = document.querySelectorAll('.summary-card');
+            console.log('Total summary cards found:', allCards.length);
+            console.log('First card:', allCards[0]);
+            
+            // Test the first card's value element specifically
+            const firstCardValue = document.querySelector('.summary-card:nth-child(1) .card-value');
+            console.log('First card value element:', firstCardValue);
+            console.log('First card value current text:', firstCardValue?.textContent);
+            console.log('First card value innerHTML:', firstCardValue?.innerHTML);
+            
+            const setValue = (selector, value, label) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    console.log(`Setting ${label} to:`, value, 'Old value was:', element.textContent);
+                    element.textContent = value;
+                    console.log(`After setting, element now shows:`, element.textContent);
+                } else {
+                    console.warn(`Could not find element for ${label}:`, selector);
+                }
+            };
+            
+            setValue('.summary-card:nth-child(1) .card-value', data.streak || 0, 'Current Streak');
+            setValue('.summary-card:nth-child(2) .card-value', (data.allTime?.words || 0).toLocaleString(), 'Total Words');
+            setValue('.summary-card:nth-child(3) .card-value', data.avgWordsPerMinute?.toFixed(1) || '0.0', 'Avg Words/Minute');
+            setValue('.summary-card:nth-child(4) .card-value', data.avgWordsPerSession || 0, 'Avg Words/Session');
+            setValue('.summary-card:nth-child(5) .card-value', (data.allTime?.sessions || 0).toLocaleString(), 'Total Sessions');
+            setValue('.summary-card:nth-child(6) .card-value', data.totalSuccessfulSessions || 0, 'Successful Sessions');
+            setValue('.summary-card:nth-child(7) .card-value', data.totalRagequits || 0, 'Ragequits');
+            setValue('.summary-card:nth-child(8) .card-value', data.totalLongTermGoals || 0, 'Long-term Goals');
+            setValue('.summary-card:nth-child(9) .card-value', data.totalAchievements || 0, 'Achievements');
+            // Format time as hours and minutes
+            const totalMinutes = data.week?.minutes || 0;
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const timeString = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            setValue('.summary-card:nth-child(10) .card-value', timeString, 'Writing Time');
+            setValue('.summary-card:nth-child(11) .card-value', data.totalRewards || 0, 'Total Rewards');
+            setValue('.summary-card:nth-child(12) .card-value', data.totalConsequences || 0, 'Total Consequences');
+            setValue('.summary-card:nth-child(13) .card-value', data.totalWordsNuked || 0, 'Words Nuked');
+            setValue('.summary-card:nth-child(14) .card-value', (data.bestDayWords || 0).toLocaleString(), 'Best Day Words');
+            setValue('.summary-card:nth-child(15) .card-value', data.avgSessionLength?.toFixed(1) || '0.0', 'Avg Session Length');
+        } catch (error) {
+            console.error('Error updating summary cards:', error);
+        }
         
         // Set calendar to current month (today)
         currentCalendarDate = new Date();
         
         // Update displays
-        updateWordsChart(currentDailyData);
-        renderCalendar();
-        updateTopSessions(data.topSessions);
+        try {
+            updateWordsChart(currentDailyData);
+        } catch (error) {
+            console.error('Error updating words chart:', error);
+        }
+        
+        try {
+            renderCalendar();
+        } catch (error) {
+            console.error('Error rendering calendar:', error);
+        }
+        
+        try {
+            updateTopSessions(data.topSessions);
+        } catch (error) {
+            console.error('Error updating top sessions:', error);
+        }
+        
+        // Update achievements
+        if (data.achievements) {
+            try {
+                updateAchievements(data.achievements);
+            } catch (error) {
+                console.error('Error updating achievements:', error);
+            }
+        }
     });
 </script>
+<script src="achievement-notifications.js"></script>
 <script src="visibility-controller.js"></script>
 <script src="theme-manager.js"></script>
 </body>

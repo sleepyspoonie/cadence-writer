@@ -72,6 +72,28 @@
             </div>
         </div>
         
+        <div class="mode-selection">
+            <h3>Writing Mode:</h3>
+            <div class="mode-grid">
+                <button class="mode-btn active" data-mode="focus">
+                    <span class="mode-icon">🎯</span>
+                    <span class="mode-name">Focus</span>
+                </button>
+                <button class="mode-btn" data-mode="reward">
+                    <span class="mode-icon">🎁</span>
+                    <span class="mode-name">Reward</span>
+                </button>
+                <button class="mode-btn" data-mode="punishment">
+                    <span class="mode-icon">⚡</span>
+                    <span class="mode-name">Punish</span>
+                </button>
+                <button class="mode-btn" data-mode="nuclear">
+                    <span class="mode-icon">💀</span>
+                    <span class="mode-name">Nuclear</span>
+                </button>
+            </div>
+        </div>
+        
         <div class="documentselect">
             <h3>Start Writing:</h3>
             <div class="document-options">
@@ -305,7 +327,24 @@
                 document.getElementById('wordCountSettings').style.display = 'none';
                 document.getElementById('timerSettings').style.display = 'block';
             }
-            saveCurrentSettings();
+            // Don't save settings on every toggle to avoid async issues
+        });
+
+        // Mode selection buttons handler
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Remove active class from all buttons
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                
+                // Add active class to clicked button
+                this.classList.add('active');
+                
+                const selectedMode = this.dataset.mode;
+                console.log('Writing mode selected:', selectedMode);
+                
+                // Save gamification mode to settings immediately
+                saveGamificationMode(selectedMode);
+            });
         });
 
         // Close button handler
@@ -325,12 +364,12 @@
         // Save when sliders change
         document.getElementById('wordCountSlider').addEventListener('change', function() {
             console.log('Word count slider changed:', this.value);
-            saveCurrentSettings();
+            // Settings will be saved when starting session
         });
         
         document.getElementById('timerSlider').addEventListener('change', function() {
             console.log('Timer slider changed:', this.value);
-            saveCurrentSettings();
+            // Settings will be saved when starting session
         });
 
         
@@ -338,7 +377,7 @@
         document.querySelectorAll('input[name="docOption"]').forEach(radio => {
             radio.addEventListener('change', function() {
                 console.log('Document option changed:', this.value);
-                saveCurrentSettings();
+                // Settings will be saved when starting session
             });
         });
 
@@ -365,6 +404,7 @@
 
         // Start button handler
         document.getElementById('startWriting').addEventListener('click', function() {
+            console.log('Start Writing button clicked');
             const selectedOption = document.querySelector('input[name="docOption"]:checked').value;
             const mode = document.getElementById('modeToggle').checked ? 'wordcount' : 'timer';
             const goal = mode === 'wordcount' 
@@ -377,7 +417,8 @@
                 documentOption: selectedOption
             };
             
-            saveCurrentSettings();
+            // Save settings first, then proceed
+            saveCurrentSettingsSync(sessionSettings);
             
             ipcRenderer.send('check-folder');
             
@@ -456,8 +497,31 @@
             docOption.checked = true;
         }
         
+        // Set active mode button based on saved gamification mode
+        const savedMode = settings.gamificationSettings?.mode || settings.gamificationMode || 'focus';
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.mode === savedMode) {
+                btn.classList.add('active');
+            }
+        });
+        
         // Update progress bar with current data
         updateProgressBar();
+    });
+
+    // Listen for settings updates from other windows (like settings page)
+    ipcRenderer.on('settings-updated', (event, settings) => {
+        console.log('Homepage received settings update:', settings);
+        
+        // Update the active gamification mode button
+        const savedMode = settings.gamificationSettings?.mode || 'focus';
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.mode === savedMode) {
+                btn.classList.add('active');
+            }
+        });
     });
 
     // Update the homepage stats handler
@@ -556,16 +620,73 @@
         updateProgressBar();
     }
 
-    function saveCurrentSettings() {
+    function saveCurrentSettingsSync(sessionSettings) {
+        // Get current active mode
+        const activeModeBtn = document.querySelector('.mode-btn.active');
+        const gamificationMode = activeModeBtn ? activeModeBtn.dataset.mode : 'focus';
+        
+        // Create settings object directly without async IPC call
         const settings = {
             mode: document.getElementById('modeToggle').checked ? 'wordcount' : 'timer',
             timerDuration: parseInt(document.getElementById('timerSlider').value),
             wordCountGoal: parseInt(document.getElementById('wordCountSlider').value),
-            documentOption: document.querySelector('input[name="docOption"]:checked').value
+            documentOption: document.querySelector('input[name="docOption"]:checked').value,
+            gamificationSettings: {
+                mode: gamificationMode
+            }
         };
         
-        ipcRenderer.send('save-settings', settings);
-        console.log('Settings saved:', settings);
+        // Merge with session settings if provided
+        const finalSettings = { ...settings, ...sessionSettings };
+        
+        ipcRenderer.send('save-settings', finalSettings);
+        console.log('Settings saved:', finalSettings);
+    }
+    
+    // Keep the old async version for other uses
+    function saveCurrentSettings() {
+        // Get current active mode
+        const activeModeBtn = document.querySelector('.mode-btn.active');
+        const gamificationMode = activeModeBtn ? activeModeBtn.dataset.mode : 'focus';
+        
+        // Get current settings to preserve existing gamificationSettings
+        ipcRenderer.send('get-settings');
+        ipcRenderer.once('load-settings', (event, currentSettings) => {
+            const existingGamificationSettings = currentSettings?.gamificationSettings || {};
+            
+            const settings = {
+                mode: document.getElementById('modeToggle').checked ? 'wordcount' : 'timer',
+                timerDuration: parseInt(document.getElementById('timerSlider').value),
+                wordCountGoal: parseInt(document.getElementById('wordCountSlider').value),
+                documentOption: document.querySelector('input[name="docOption"]:checked').value,
+                gamificationSettings: {
+                    ...existingGamificationSettings,
+                    mode: gamificationMode
+                }
+            };
+            
+            ipcRenderer.send('save-settings', settings);
+            console.log('Settings saved:', settings);
+        });
+    }
+
+    function saveGamificationMode(selectedMode) {
+        // Get current settings to preserve everything else
+        ipcRenderer.send('get-settings');
+        ipcRenderer.once('load-settings', (event, currentSettings) => {
+            const existingGamificationSettings = currentSettings?.gamificationSettings || {};
+            
+            const settings = {
+                ...currentSettings,
+                gamificationSettings: {
+                    ...existingGamificationSettings,
+                    mode: selectedMode
+                }
+            };
+            
+            ipcRenderer.send('save-settings', settings);
+            console.log('Gamification mode saved:', selectedMode);
+        });
     }
 
     function updateRecentFileOption() {
@@ -591,8 +712,10 @@
     }
 
     function startWritingSession(documentOption, sessionSettings) {
+        console.log('startWritingSession called with:', documentOption, sessionSettings);
         switch(documentOption) {
             case 'new':
+                console.log('Sending start-new-document IPC message');
                 ipcRenderer.send('start-new-document', sessionSettings);
                 break;
             case 'browse':
@@ -740,6 +863,7 @@
 
     updateProgressBar();
 </script>
+    <script src="achievement-notifications.js"></script>
     <script src="visibility-controller.js"></script>
     <script src="theme-manager.js"></script>
 </body>

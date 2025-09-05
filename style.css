@@ -257,6 +257,65 @@ input[type="range"]::-moz-range-thumb {
     color: var(--color-text-faint);
 }
 
+/* Mode Selection */
+.mode-selection {
+    margin-bottom: 2rem;
+}
+
+.mode-selection h3 {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin-bottom: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.mode-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+}
+
+.mode-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.75rem 0.25rem;
+    background: var(--color-bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: inherit;
+    color: var(--color-text-secondary);
+}
+
+.mode-btn:hover {
+    background: var(--color-bg-tertiary);
+    border-color: var(--color-accent);
+    color: var(--color-text-primary);
+    transform: translateY(-2px);
+}
+
+.mode-btn.active {
+    background: var(--color-accent-muted);
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+}
+
+.mode-icon {
+    font-size: 1.25rem;
+    display: block;
+}
+
+.mode-name {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.1;
+}
+
 /* Document Selection */
 .documentselect h3 {
     font-size: 0.9rem;

@@ -281,6 +281,9 @@
         const { ipcRenderer } = require('electron');
         let allFiles = [];
 
+        // Track page visit for achievements
+        ipcRenderer.send('page-visited', 'files');
+
         // Load files when page loads
         function loadFiles() {
             console.log('Requesting files...');
@@ -490,6 +493,7 @@
         // Load files on page load
         loadFiles();
     </script>
+    <script src="achievement-notifications.js"></script>
     <script src="visibility-controller.js"></script>
     <script src="theme-manager.js"></script>
 </body>

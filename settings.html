@@ -983,6 +983,13 @@
                         <span class="mode-name">Punishment Mode</span>
                     </label>
                 </div>
+                <div class="mode-option">
+                    <input type="radio" name="writingMode" id="modeNuclear" value="nuclear">
+                    <label for="modeNuclear">
+                        <div class="mode-icon">💀</div>
+                        <span class="mode-name">Nuclear Mode</span>
+                    </label>
+                </div>
             </div>
             
             <!-- Focus Mode Config -->
@@ -1032,13 +1039,30 @@
                             Screen turns red
                         </label>
                         <label>
-                            <input type="radio" name="punishType" value="kamikaze">
-                            Kamikaze mode
+                            <input type="radio" name="punishType" value="both">
+                            Both sound and red screen
                         </label>
                     </div>
-                    <div class="warning-text" id="kamikazeWarning" style="display: none;">
-                        ⚠️ Kamikaze mode will DELETE words from the beginning of your document if you stop writing! Use with extreme caution.
+                    <div class="warning-text" id="nuclearWarning" style="display: none;">
+                        ⚠️ Nuclear mode will DELETE words from the beginning of your document if you stop writing! Use with extreme caution.
                     </div>
+                </div>
+            </div>
+            
+            <!-- Nuclear Mode Config -->
+            <div class="mode-config" id="nuclearConfig">
+                <div class="config-group">
+                    <span class="config-label">Grace period:</span>
+                    <input type="number" class="number-input" id="nuclearGracePeriod" value="10" min="5" max="60">
+                    <span style="color: var(--color-text-muted);">seconds of inactivity</span>
+                </div>
+                <div class="config-group">
+                    <span class="config-label">Deletion speed:</span>
+                    <input type="number" class="number-input" id="deletionSpeed" value="5" min="1" max="20">
+                    <span style="color: var(--color-text-muted);">characters per second</span>
+                </div>
+                <div class="warning-text">
+                    ⚠️ <strong>DANGER:</strong> Nuclear mode will DELETE text from your cursor position if you stop writing! Make sure to save frequently and use only if you're confident in your typing abilities.
                 </div>
             </div>
             
@@ -1135,6 +1159,9 @@
 
 <script>
     const { ipcRenderer } = require('electron');
+    
+    // Track page visit for achievements
+    ipcRenderer.send('page-visited', 'settings');
     
     // Track unsaved changes
     let originalSettings = {};
@@ -1305,15 +1332,17 @@
                 document.getElementById('rewardConfig').classList.add('active');
             } else if (e.target.value === 'punishment') {
                 document.getElementById('punishmentConfig').classList.add('active');
+            } else if (e.target.value === 'nuclear') {
+                document.getElementById('nuclearConfig').classList.add('active');
             }
         });
     });
 
-    // Show/hide kamikaze warning
+    // Show/hide nuclear warning
     document.querySelectorAll('input[name="punishType"]').forEach(radio => {
         radio.addEventListener('change', (e) => {
-            const warning = document.getElementById('kamikazeWarning');
-            if (e.target.value === 'kamikaze') {
+            const warning = document.getElementById('nuclearWarning');
+            if (e.target.value === 'nuclear') {
                 warning.style.display = 'block';
             } else {
                 warning.style.display = 'none';
@@ -1454,6 +1483,8 @@
             rewardType: document.querySelector('input[name="rewardType"]:checked').value,
             gracePeriod: parseInt(document.getElementById('gracePeriod').value),
             punishType: document.querySelector('input[name="punishType"]:checked').value,
+            nuclearGracePeriod: parseInt(document.getElementById('nuclearGracePeriod').value),
+            deletionSpeed: parseInt(document.getElementById('deletionSpeed').value),
             disableStreak: document.getElementById('disableStreak').checked,
             disableAchievements: document.getElementById('disableAchievements').checked
         };
@@ -1554,6 +1585,8 @@
             
             document.getElementById('rewardWords').value = settings.gamificationSettings.rewardWords || 100;
             document.getElementById('gracePeriod').value = settings.gamificationSettings.gracePeriod || 10;
+            document.getElementById('nuclearGracePeriod').value = settings.gamificationSettings.nuclearGracePeriod || 10;
+            document.getElementById('deletionSpeed').value = settings.gamificationSettings.deletionSpeed || 5;
             
             if (settings.gamificationSettings.rewardType) {
                 document.querySelector(`input[name="rewardType"][value="${settings.gamificationSettings.rewardType}"]`).checked = true;
@@ -1561,8 +1594,8 @@
             
             if (settings.gamificationSettings.punishType) {
                 document.querySelector(`input[name="punishType"][value="${settings.gamificationSettings.punishType}"]`).checked = true;
-                if (settings.gamificationSettings.punishType === 'kamikaze') {
-                    document.getElementById('kamikazeWarning').style.display = 'block';
+                if (settings.gamificationSettings.punishType === 'nuclear') {
+                    document.getElementById('nuclearWarning').style.display = 'block';
                 }
             }
             
@@ -1610,6 +1643,8 @@
             rewardType: document.querySelector('input[name="rewardType"]:checked').value,
             gracePeriod: parseInt(document.getElementById('gracePeriod').value),
             punishType: document.querySelector('input[name="punishType"]:checked').value,
+            nuclearGracePeriod: parseInt(document.getElementById('nuclearGracePeriod').value),
+            deletionSpeed: parseInt(document.getElementById('deletionSpeed').value),
             disableStreak: document.getElementById('disableStreak').checked,
             disableAchievements: document.getElementById('disableAchievements').checked
         };
@@ -1764,6 +1799,7 @@
     });
 </script>
 
+   <script src="achievement-notifications.js"></script>
    <script src="visibility-controller.js"></script>
    <script src="theme-manager.js"></script>
 </body>
