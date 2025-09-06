@@ -583,6 +583,7 @@
     // Gamification mode variables
     let gamificationMode = 'focus';
     let gamificationSettings = {};
+    let editorSettings = {};
     let lastTypingTime = Date.now();
     let inactivityTimer = null;
     let warningTimer = null;
@@ -601,16 +602,30 @@
             if (settings && settings.gamificationSettings) {
                 gamificationSettings = settings.gamificationSettings;
                 gamificationMode = gamificationSettings.mode || 'focus';
+            }
+            
+            if (settings && settings.editorSettings) {
+                editorSettings = settings.editorSettings;
                 
-                console.log('Gamification settings loaded:', {
+                console.log('Editor settings loaded:', {
                     mode: gamificationMode,
                     punishType: gamificationSettings.punishType,
                     gracePeriod: gamificationSettings.gracePeriod,
-                    settings: gamificationSettings
+                    hardcoreMode: editorSettings.hardcoreMode,
+                    gamificationSettings: gamificationSettings,
+                    editorSettings: editorSettings
                 });
                 
                 // Apply mode-specific setup
                 setupGameMode();
+                
+                // Apply auto fullscreen if enabled
+                if (editorSettings.autoFullscreen) {
+                    console.log('Auto fullscreen enabled, entering fullscreen mode');
+                    setTimeout(() => {
+                        ipcRenderer.send('toggle-fullscreen');
+                    }, 500); // Small delay to ensure page is fully loaded
+                }
                 
                 // Reward mode uses emoji celebrations only
             } else {
@@ -1167,15 +1182,18 @@
     
     // Hardcore mode prevention
     function preventHardcoreActions(event) {
-        if (!gamificationSettings.hardcoreMode || sessionMode === 'freewrite') return false;
+        if (!editorSettings.hardcoreMode || sessionMode === 'freewrite') return false;
         
         const isCopy = (event.ctrlKey || event.metaKey) && event.key === 'c';
         const isPaste = (event.ctrlKey || event.metaKey) && event.key === 'v';
         const isBackspace = event.key === 'Backspace';
         const isDelete = event.key === 'Delete';
         const isUndo = (event.ctrlKey || event.metaKey) && event.key === 'z';
+        const isSelectAll = (event.ctrlKey || event.metaKey) && event.key === 'a';
+        const isCut = (event.ctrlKey || event.metaKey) && event.key === 'x';
+        const isArrowWithShift = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && event.shiftKey;
         
-        if (isCopy || isPaste || isBackspace || isDelete || isUndo) {
+        if (isCopy || isPaste || isBackspace || isDelete || isUndo || isSelectAll || isCut || isArrowWithShift) {
             event.preventDefault();
             event.stopPropagation();
             return true;
@@ -1475,6 +1493,49 @@
             }
             console.log('*** keydown detected, calling onTypingActivity');
             onTypingActivity();
+        }
+    });
+
+    // Mouse events for hardcore mode (prevent text selection)
+    document.addEventListener('mousedown', function(e) {
+        if (editorSettings.hardcoreMode && sessionMode !== 'freewrite' && e.target.closest('.ql-editor')) {
+            // Allow single clicks for cursor positioning, but prevent dragging for selection
+            let startX = e.clientX;
+            let startY = e.clientY;
+            
+            const handleMouseMove = (moveEvent) => {
+                // If mouse has moved significantly, it's a drag for selection - prevent it
+                const deltaX = Math.abs(moveEvent.clientX - startX);
+                const deltaY = Math.abs(moveEvent.clientY - startY);
+                if (deltaX > 3 || deltaY > 3) {
+                    moveEvent.preventDefault();
+                    moveEvent.stopPropagation();
+                }
+            };
+            
+            const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+    });
+
+    // Prevent selection-related context menu in hardcore mode
+    document.addEventListener('contextmenu', function(e) {
+        if (editorSettings.hardcoreMode && sessionMode !== 'freewrite' && e.target.closest('.ql-editor')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Prevent selectstart event in hardcore mode
+    document.addEventListener('selectstart', function(e) {
+        if (editorSettings.hardcoreMode && sessionMode !== 'freewrite' && e.target.closest('.ql-editor')) {
+            e.preventDefault();
+            return false;
         }
     });
     

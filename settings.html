@@ -659,7 +659,7 @@
             
             <div class="setting-item">
                 <div class="setting-info">
-                    <span class="setting-label">Disable Long-term Goal Prompting</span>
+                    <span class="setting-label">Disable Long-Term Goals</span>
                     <span class="setting-description">Don't ask to set up long-term goals on startup</span>
                 </div>
                 <div class="setting-control">
@@ -910,18 +910,6 @@
                 </div>
             </div>
             
-            <div class="setting-item">
-                <div class="setting-info">
-                    <span class="setting-label">Typewriter Sounds</span>
-                    <span class="setting-description">Play keyboard sounds while typing</span>
-                </div>
-                <div class="setting-control">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="typewriterSound">
-                        <span class="toggle-slider"></span>
-                    </label>
-                </div>
-            </div>
             
             <div class="setting-item">
                 <div class="setting-info">
@@ -1181,7 +1169,6 @@
             fontFamily: document.getElementById('fontFamily').value,
             hideTimer: document.getElementById('hideTimer').checked,
             hideWordCount: document.getElementById('hideWordCount').checked,
-            typewriterSound: document.getElementById('typewriterSound').checked,
             autoFullscreen: document.getElementById('autoFullscreen').checked,
             lockExit: document.getElementById('lockExit').checked,
             
@@ -1204,8 +1191,15 @@
         const currentSettings = captureCurrentSettings();
         const changed = JSON.stringify(originalSettings) !== JSON.stringify(currentSettings);
         
+        console.log('Settings check:', {
+            original: originalSettings,
+            current: currentSettings,
+            changed: changed
+        });
+        
         if (changed !== hasUnsavedChanges) {
             hasUnsavedChanges = changed;
+            console.log('Updating save button, hasUnsavedChanges:', hasUnsavedChanges);
             updateStickySaveButton();
         }
     }
@@ -1453,7 +1447,6 @@
         const editorSettings = {
             fontSize: parseInt(document.getElementById('fontSize').value),
             fontFamily: document.getElementById('fontFamily').value,
-            typewriterSound: document.getElementById('typewriterSound').checked,
             hardcoreMode: document.getElementById('hardcoreMode').checked,
             autoFullscreen: document.getElementById('autoFullscreen').checked,
             hideTimer: document.getElementById('hideTimer').checked,
@@ -1477,7 +1470,7 @@
         const gamificationSettings = {
             mode: document.querySelector('input[name="writingMode"]:checked').value,
             rewardWords: parseInt(document.getElementById('rewardWords').value),
-            rewardType: document.querySelector('input[name="rewardType"]:checked').value,
+            rewardType: 'sound', // Fixed since we removed image rewards
             gracePeriod: parseInt(document.getElementById('gracePeriod').value),
             punishType: document.querySelector('input[name="punishType"]:checked').value,
             nuclearGracePeriod: parseInt(document.getElementById('nuclearGracePeriod').value),
@@ -1545,7 +1538,6 @@
             document.getElementById('fontSize').value = settings.editorSettings.fontSize || 18;
             document.getElementById('fontSizeValue').textContent = (settings.editorSettings.fontSize || 18) + 'px';
             document.getElementById('fontFamily').value = settings.editorSettings.fontFamily || 'Georgia';
-            document.getElementById('typewriterSound').checked = settings.editorSettings.typewriterSound || false;
             document.getElementById('hardcoreMode').checked = settings.editorSettings.hardcoreMode || false;
             document.getElementById('autoFullscreen').checked = settings.editorSettings.autoFullscreen || false;
             document.getElementById('hideTimer').checked = settings.editorSettings.hideTimer || false;
@@ -1620,7 +1612,7 @@
         // Capture original settings after loading
         setTimeout(() => {
             originalSettings = captureCurrentSettings();
-        }, 100);
+        }, 600);
     });
 
     // Save settings
@@ -1628,7 +1620,6 @@
         const editorSettings = {
             fontSize: parseInt(document.getElementById('fontSize').value),
             fontFamily: document.getElementById('fontFamily').value,
-            typewriterSound: document.getElementById('typewriterSound').checked,
             hardcoreMode: document.getElementById('hardcoreMode').checked,
             autoFullscreen: document.getElementById('autoFullscreen').checked,
             hideTimer: document.getElementById('hideTimer').checked,
@@ -1652,7 +1643,7 @@
         const gamificationSettings = {
             mode: document.querySelector('input[name="writingMode"]:checked').value,
             rewardWords: parseInt(document.getElementById('rewardWords').value),
-            rewardType: document.querySelector('input[name="rewardType"]:checked').value,
+            rewardType: 'sound', // Fixed since we removed image rewards
             gracePeriod: parseInt(document.getElementById('gracePeriod').value),
             punishType: document.querySelector('input[name="punishType"]:checked').value,
             nuclearGracePeriod: parseInt(document.getElementById('nuclearGracePeriod').value),
@@ -1831,6 +1822,7 @@
     function addChangeTracking() {
         // Track all checkboxes
         document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            console.log('Adding change tracking to checkbox:', checkbox.id);
             checkbox.addEventListener('change', checkForChanges);
         });
         
@@ -1846,8 +1838,8 @@
         });
     }
     
-    // Initialize change tracking after a short delay
-    setTimeout(addChangeTracking, 200);
+    // Initialize change tracking after settings are loaded
+    setTimeout(addChangeTracking, 700);
     
     // Wire up sticky save button
     document.getElementById('stickySaveButton').addEventListener('click', () => {
