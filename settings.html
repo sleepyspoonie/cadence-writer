@@ -957,7 +957,7 @@
             <div class="setting-item">
                 <div class="setting-info">
                     <span class="setting-label">Writing Mode</span>
-                    <span class="setting-description">Choose how the app motivates you</span>
+                    <span class="setting-description" id="writingModeDescription">Choose how the app motivates you</span>
                 </div>
             </div>
             
@@ -1005,18 +1005,8 @@
                     <span style="color: var(--color-text-muted);">words</span>
                 </div>
                 <div class="config-group">
-                    <span class="config-label">Reward type:</span>
-                    <div class="radio-group">
-                        <label>
-                            <input type="radio" name="rewardType" value="sound" checked>
-                            Satisfying sound
-                        </label>
-                        <label>
-                            <input type="radio" name="rewardType" value="image">
-                            Pretty image
-                        </label>
-                    </div>
-                    <a class="folder-link" id="openRewardFolder">📁 Open rewards folder to customize images</a>
+                    <span class="config-label">Celebration style:</span>
+                    <p style="color: var(--color-text-muted); font-size: 0.9rem;">Pleasant chiming sound with silly compliments and emoji celebrations</p>
                 </div>
             </div>
             
@@ -1325,15 +1315,22 @@
                 config.classList.remove('active');
             });
             
-            // Show selected config
+            // Update description based on selected mode
+            const descriptionEl = document.getElementById('writingModeDescription');
+            
+            // Show selected config and update description
             if (e.target.value === 'focus') {
                 document.getElementById('focusConfig').classList.add('active');
+                descriptionEl.textContent = 'No rewards or punishments. Just you and your writing.';
             } else if (e.target.value === 'reward') {
                 document.getElementById('rewardConfig').classList.add('active');
+                descriptionEl.textContent = 'Get rewarded with pleasant sounds and celebrations every few words.';
             } else if (e.target.value === 'punishment') {
                 document.getElementById('punishmentConfig').classList.add('active');
+                descriptionEl.textContent = 'Face consequences like annoying sounds or red screen when you stop writing.';
             } else if (e.target.value === 'nuclear') {
                 document.getElementById('nuclearConfig').classList.add('active');
+                descriptionEl.textContent = 'DANGER: Text gets deleted if you stop writing. Use with extreme caution.';
             }
         });
     });
@@ -1385,10 +1382,10 @@
         document.getElementById('currentPath').textContent = folderPath;
     });
 
-    // Open rewards folder
-    document.getElementById('openRewardFolder').addEventListener('click', () => {
-        ipcRenderer.send('open-rewards-folder');
-    });
+    // Open rewards folder (removed since we no longer have image rewards)
+    // document.getElementById('openRewardFolder').addEventListener('click', () => {
+    //     ipcRenderer.send('open-rewards-folder');
+    // });
 
     // Long-term goals interdependency handler
     document.getElementById('disableLongTermGoals').addEventListener('change', function() {
@@ -1524,10 +1521,13 @@
         hideModal();
     });
 
-    // Load current settings
-    ipcRenderer.send('get-settings');
-
+    // Load current settings - delay to let visibility controller load first
+    setTimeout(() => {
+        ipcRenderer.send('get-settings');
+    }, 500);
+    
     ipcRenderer.on('load-settings', (event, settings) => {
+        console.log('Settings loaded:', settings);
         console.log('Loading settings:', settings);
         
         // Set document path
@@ -1578,19 +1578,22 @@
         }
         
         // Load gamification settings
+        console.log('Full settings object:', settings);
+        console.log('gamificationSettings:', settings.gamificationSettings);
         if (settings.gamificationSettings) {
             const mode = settings.gamificationSettings.mode || 'focus';
-            document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).checked = true;
-            document.getElementById(mode + 'Config').classList.add('active');
+            console.log('Extracted mode:', mode);
+            updateGamificationModeUI(mode);
             
             document.getElementById('rewardWords').value = settings.gamificationSettings.rewardWords || 100;
             document.getElementById('gracePeriod').value = settings.gamificationSettings.gracePeriod || 10;
             document.getElementById('nuclearGracePeriod').value = settings.gamificationSettings.nuclearGracePeriod || 10;
             document.getElementById('deletionSpeed').value = settings.gamificationSettings.deletionSpeed || 5;
             
-            if (settings.gamificationSettings.rewardType) {
-                document.querySelector(`input[name="rewardType"][value="${settings.gamificationSettings.rewardType}"]`).checked = true;
-            }
+            // Reward type removed since we simplified reward mode
+            // if (settings.gamificationSettings.rewardType) {
+            //     document.querySelector(`input[name="rewardType"][value="${settings.gamificationSettings.rewardType}"]`).checked = true;
+            // }
             
             if (settings.gamificationSettings.punishType) {
                 document.querySelector(`input[name="punishType"][value="${settings.gamificationSettings.punishType}"]`).checked = true;
@@ -1604,6 +1607,15 @@
         }
 
         updateTodayProgressState();
+        
+        // Ensure mode description is set correctly on load by triggering change event
+        setTimeout(() => {
+            const checkedMode = document.querySelector('input[name="writingMode"]:checked');
+            if (checkedMode) {
+                console.log('Triggering change event for mode:', checkedMode.value);
+                checkedMode.dispatchEvent(new Event('change'));
+            }
+        }, 150);
         
         // Capture original settings after loading
         setTimeout(() => {
@@ -1694,6 +1706,51 @@
                 </svg>`;
         }
     });
+
+    // Listen for window focus to reload settings and sync with homepage changes
+    window.addEventListener('focus', () => {
+        console.log('Settings window focused, reloading settings...');
+        ipcRenderer.send('get-settings');
+    });
+
+    // Function to update gamification mode UI
+    function updateGamificationModeUI(mode) {
+        console.log('Updating gamification mode UI to:', mode);
+        
+        // Update radio button selection
+        const modeRadio = document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1));
+        if (modeRadio) {
+            // Clear all mode selections
+            document.querySelectorAll('input[name="writingMode"]').forEach(radio => {
+                radio.checked = false;
+            });
+            
+            // Check the new mode
+            modeRadio.checked = true;
+            
+            // Hide all configs
+            document.querySelectorAll('.mode-config').forEach(config => {
+                config.classList.remove('active');
+            });
+            
+            // Show selected config
+            document.getElementById(mode + 'Config').classList.add('active');
+            
+            // Update description
+            const descriptionEl = document.getElementById('writingModeDescription');
+            if (descriptionEl) {
+                if (mode === 'focus') {
+                    descriptionEl.textContent = 'No rewards or punishments. Just you and your writing.';
+                } else if (mode === 'reward') {
+                    descriptionEl.textContent = 'Get rewarded with pleasant sounds and celebrations every few words.';
+                } else if (mode === 'punishment') {
+                    descriptionEl.textContent = 'Face consequences like annoying sounds or red screen when you stop writing.';
+                } else if (mode === 'nuclear') {
+                    descriptionEl.textContent = 'DANGER: Text gets deleted if you stop writing. Use with extreme caution.';
+                }
+            }
+        }
+    }
 
     // Preset theme buttons functionality
     const presetThemes = {

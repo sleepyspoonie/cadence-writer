@@ -380,8 +380,16 @@
         
         .reward-content h3 {
             color: var(--color-accent);
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
             font-size: 1.5rem;
+        }
+        
+        .reward-subtitle {
+            color: var(--color-text-muted);
+            font-style: italic;
+            font-size: 0.9rem;
+            margin: 0.5rem 0 1rem 0;
+            line-height: 1.4;
         }
         
         .reward-image {
@@ -604,10 +612,7 @@
                 // Apply mode-specific setup
                 setupGameMode();
                 
-                // Load reward images if in reward mode
-                if (gamificationMode === 'reward' && gamificationSettings.rewardType === 'image') {
-                    loadRewardImages();
-                }
+                // Reward mode uses emoji celebrations only
             } else {
                 console.log('No gamification settings found');
             }
@@ -655,30 +660,189 @@
     function showReward() {
         const popup = document.getElementById('rewardPopup');
         const imageContainer = document.getElementById('rewardImage');
+        const rewardTitle = popup.querySelector('h3');
         
-        if (gamificationSettings.rewardType === 'image' && rewardImages.length > 0) {
-            const randomImage = rewardImages[Math.floor(Math.random() * rewardImages.length)];
-            imageContainer.innerHTML = `<img src="${randomImage}" alt="Reward">`;
-        } else {
-            imageContainer.innerHTML = '🎉';
-            // Play reward sound
-            playRewardSound();
+        // Always play the pleasant chiming sound
+        playRewardSound();
+        
+        // Silly and encouraging compliments with matching sub-text
+        const sillyRewards = [
+            {
+                title: "Look at you, absolutely crushing it! 🚀",
+                subtitle: "Houston, we have a word count problem... it's TOO HIGH!",
+                emoji: "🚀"
+            },
+            {
+                title: "Words fear you and rightfully so! ⚔️",
+                subtitle: "They whisper your name in dark dictionaries",
+                emoji: "⚔️"
+            },
+            {
+                title: "You're basically Shakespeare with Wi-Fi! 📜",
+                subtitle: "To write, or not to write? That was never a question for you",
+                emoji: "📜"
+            },
+            {
+                title: "The dictionary is taking notes from YOU! 📚",
+                subtitle: "Webster is frantically updating his definitions",
+                emoji: "📚"
+            },
+            {
+                title: "Your keyboard is having the time of its life! ⌨️",
+                subtitle: "Those keys have never felt so alive",
+                emoji: "⌨️"
+            },
+            {
+                title: "Even Hemingway would be impressed! 🥃",
+                subtitle: "And that guy was pretty hard to impress",
+                emoji: "🥃"
+            },
+            {
+                title: "You magnificent word-wielding wizard! 🧙‍♂️",
+                subtitle: "Your spell: Transformicus Blankpagicus into Masterpiece!",
+                emoji: "🧙‍♂️"
+            },
+            {
+                title: "Your brain is absolutely magnificent! 🧠🔥",
+                subtitle: "Scientists want to study your word-generating neurons",
+                emoji: "🧠"
+            },
+            {
+                title: "You're not writing, you're creating ART! 🎨",
+                subtitle: "The Louvre called, they want to display your sentences",
+                emoji: "🎨"
+            },
+            {
+                title: "The alphabet never looked so good! 🔤",
+                subtitle: "A through Z are blushing at your arrangements",
+                emoji: "🔤"
+            },
+            {
+                title: "You're basically a word ninja! 🥷",
+                subtitle: "Silent but deadly... to writer's block",
+                emoji: "🥷"
+            },
+            {
+                title: "Even autocorrect learns from you! 🤖",
+                subtitle: "It's upgraded itself to 'auto-impressed'",
+                emoji: "🤖"
+            },
+            {
+                title: "Your creativity level: MAXIMUM! 📊",
+                subtitle: "The charts can't even contain your awesomeness",
+                emoji: "📊"
+            },
+            {
+                title: "You're writing circles around everyone! ⭕",
+                subtitle: "They're still trying to figure out where you went",
+                emoji: "⭕"
+            },
+            {
+                title: "Your words could power a small city! ⚡",
+                subtitle: "The mayor is asking for your autograph",
+                emoji: "⚡"
+            },
+            {
+                title: "Plot twist: you're the main character! 📚",
+                subtitle: "And you're absolutely nailing this chapter",
+                emoji: "📚"
+            },
+            {
+                title: "You're not just good, you're LEGENDARY! 🏆",
+                subtitle: "Legends will be told of this writing session",
+                emoji: "🏆"
+            },
+            {
+                title: "You're absolutely unstoppable! 🌪️",
+                subtitle: "Writer's block filed for bankruptcy",
+                emoji: "🌪️"
+            },
+            {
+                title: "Your words have achieved sentience! 🤯",
+                subtitle: "They're writing thank-you notes to your brain",
+                emoji: "🤯"
+            },
+            {
+                title: "You've broken the writing sound barrier! 💥",
+                subtitle: "That sonic boom was your productivity",
+                emoji: "💥"
+            }
+        ];
+        
+        const randomReward = sillyRewards[Math.floor(Math.random() * sillyRewards.length)];
+        
+        // Always use emojis now (no more image mode)
+        imageContainer.innerHTML = randomReward.emoji;
+        rewardTitle.textContent = randomReward.title;
+        
+        // Update the subtitle if it exists
+        let subtitle = popup.querySelector('.reward-subtitle');
+        if (!subtitle) {
+            subtitle = document.createElement('p');
+            subtitle.className = 'reward-subtitle';
+            rewardTitle.parentNode.insertBefore(subtitle, rewardTitle.nextSibling);
         }
+        subtitle.textContent = randomReward.subtitle;
         
         popup.style.display = 'block';
         rewardsSent++;
         
-        // Hide after 3 seconds
+        // Add a subtle glow effect to the popup
+        popup.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--color-accent)';
+        
+        // Hide after 3 seconds with fade out
         setTimeout(() => {
-            popup.style.display = 'none';
-        }, 3000);
+            popup.style.transition = 'opacity 0.5s ease-out';
+            popup.style.opacity = '0';
+            setTimeout(() => {
+                popup.style.display = 'none';
+                popup.style.opacity = '1';
+                popup.style.transition = '';
+                popup.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.3)';
+            }, 500);
+        }, 2500);
     }
     
-    // Play reward sound
+    // Play reward sound - create a pleasant chime using Web Audio API
     function playRewardSound() {
-        const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJevrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUX7Ps4adREAtGn9/0xG0gBDuT2/N');
-        audio.volume = 0.3;
-        audio.play().catch(() => {});
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create pleasant bell-like chime with multiple harmonics
+            const playNote = (frequency, startTime, duration, volume) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, startTime);
+                oscillator.type = 'sine';
+                
+                // Gentle attack and decay envelope
+                gainNode.gain.setValueAtTime(0, startTime);
+                gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            };
+            
+            const currentTime = audioContext.currentTime;
+            
+            // Play a pleasant major chord progression (C - E - G - C)
+            playNote(523.25, currentTime, 0.8, 0.3);        // C5
+            playNote(659.25, currentTime + 0.1, 0.8, 0.25);  // E5
+            playNote(783.99, currentTime + 0.2, 0.8, 0.2);   // G5
+            playNote(1046.50, currentTime + 0.3, 1.2, 0.15); // C6
+            
+        } catch (error) {
+            console.log('Web Audio not supported, using fallback');
+            // Fallback to a simple beep
+            const audio = new Audio('data:audio/wav;base64,UklGRi4EAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoEAAC4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4');
+            audio.volume = 0.3;
+            audio.play().catch(() => {});
+        }
     }
     
     // Start punishment/nuclear consequences
@@ -991,8 +1155,10 @@
         const currentWords = currentWordCount;
         const wordsPerReward = gamificationSettings.rewardWords || 100;
         const rewardsEarned = Math.floor(currentWords / wordsPerReward);
+        const previousRewards = Math.floor(lastWordCountCheck / wordsPerReward);
         
-        if (rewardsEarned > Math.floor(lastWordCountCheck / wordsPerReward)) {
+        if (rewardsEarned > previousRewards) {
+            console.log(`🎉 Reward triggered! Words: ${currentWords}, Milestone: ${rewardsEarned * wordsPerReward}`);
             showReward();
         }
         

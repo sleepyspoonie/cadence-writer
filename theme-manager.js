@@ -228,17 +228,28 @@ class ThemeManager {
     loadTheme() {
         // Check if ipcRenderer exists (from visibility-controller or elsewhere)
         if (typeof ipcRenderer !== 'undefined') {
-            ipcRenderer.send('get-settings');
+            // Delay to let visibility controller load first, then request settings
+            setTimeout(() => {
+                console.log('Theme manager requesting settings...');
+                ipcRenderer.send('get-settings');
+            }, 600);
             
-            ipcRenderer.once('load-settings', (event, settings) => {
+            ipcRenderer.on('load-settings', (event, settings) => {
+                console.log('Theme manager received settings:', settings);
                 if (settings && settings.appearanceSettings) {
+                    console.log('Appearance settings:', settings.appearanceSettings);
                     const { theme, customColors } = settings.appearanceSettings;
                     
                     if (theme === 'custom' && customColors) {
+                        console.log('Applying custom theme:', customColors);
                         this.applyCustomTheme(customColors);
                     } else if (this.themes[theme]) {
+                        console.log('Applying theme:', theme);
                         this.applyTheme(theme);
                     }
+                } else {
+                    console.log('No appearance settings found, applying default dark theme');
+                    this.applyTheme('dark');
                 }
             });
         }
