@@ -459,6 +459,14 @@
         .editor-container.nuclear-active {
             background-color: #ff4444 !important;
             animation: nuclearPulse 1s infinite alternate;
+            transition: none !important;
+        }
+        
+        .editor-container.nuclear-active .ql-editor,
+        .editor-container.nuclear-active #editor-wrapper,
+        .editor-container.nuclear-active #editor {
+            background-color: #ff4444 !important;
+            transition: none !important;
         }
         
         @keyframes nuclearPulse {
@@ -572,6 +580,7 @@
     let warningTimer = null;
     let punishmentAlarm = null;
     let nuclearTimer = null;
+    let isAppDeletingText = false; // Flag to track when app is deleting text
     let rewardImages = [];
     let lastWordCountCheck = 0;
     let rewardsSent = 0;
@@ -607,6 +616,7 @@
     
     // Setup game mode effects
     function setupGameMode() {
+        console.log('*** setupGameMode called, isAppDeletingText:', isAppDeletingText);
         const container = document.querySelector('.editor-container');
         
         // Reset classes
@@ -690,6 +700,17 @@
             }
         } else if (gamificationMode === 'nuclear') {
             container.classList.add('nuclear-active');
+            
+            // Force the red background styles to ensure they stick
+            container.style.setProperty('background-color', '#ff4444', 'important');
+            container.style.setProperty('transition', 'none', 'important');
+            container.querySelector('.ql-editor').style.setProperty('background-color', '#ff4444', 'important');
+            container.querySelector('.ql-editor').style.setProperty('transition', 'none', 'important');
+            container.querySelector('#editor-wrapper').style.setProperty('background-color', '#ff4444', 'important');
+            container.querySelector('#editor-wrapper').style.setProperty('transition', 'none', 'important');
+            container.querySelector('#editor').style.setProperty('background-color', '#ff4444', 'important');
+            container.querySelector('#editor').style.setProperty('transition', 'none', 'important');
+            
             startAlarm();
             startTextDeletion();
         }
@@ -697,7 +718,7 @@
         consequencesFaced++;
     }
     
-    // Stop punishment/nuclear consequences
+    // Stop punishment consequences
     function stopConsequences() {
         const container = document.querySelector('.editor-container');
         
@@ -707,9 +728,8 @@
         container.querySelector('#editor-wrapper').style.transition = 'background-color 2s ease-out';
         container.querySelector('#editor').style.transition = 'background-color 2s ease-out';
         
-        container.classList.remove('punishment-active', 'nuclear-active', 'punishment-warning', 'transitioning');
+        container.classList.remove('punishment-active', 'punishment-warning', 'transitioning');
         stopAlarm();
-        stopTextDeletion();
         
         // Reset transitions after fade completes
         setTimeout(() => {
@@ -745,6 +765,9 @@
         const deletionSpeed = gamificationSettings.deletionSpeed || 5;
         const intervalTime = 1000 / deletionSpeed; // Characters per second converted to interval
         
+        isAppDeletingText = true; // Mark that app is deleting text
+        console.log('*** startTextDeletion: isAppDeletingText set to true');
+        
         nuclearTimer = setInterval(() => {
             const text = quill.getText();
             if (text.length > 1) { // Keep at least one character
@@ -753,7 +776,11 @@
                 
                 // Delete character at or before cursor position
                 const deletePos = Math.max(0, cursorPos - 1);
-                quill.deleteText(deletePos, 1);
+                
+                console.log('*** Deleting character at position', deletePos, 'isAppDeletingText:', isAppDeletingText);
+                
+                // Use 'api' source to indicate this is programmatic deletion
+                quill.deleteText(deletePos, 1, 'api');
                 
                 // Move cursor back if needed
                 if (selection) {
@@ -769,10 +796,47 @@
             clearInterval(nuclearTimer);
             nuclearTimer = null;
         }
+        isAppDeletingText = false; // Clear the flag when deletion stops
+        console.log('*** stopTextDeletion: isAppDeletingText set to false');
+    }
+    
+    // Stop nuclear consequences (separate from stopConsequences to handle screen color properly)
+    function stopNuclearConsequences() {
+        console.log('*** stopNuclearConsequences called, isAppDeletingText:', isAppDeletingText);
+        const container = document.querySelector('.editor-container');
+        
+        // First, clear the forced inline styles that were preventing transitions
+        container.style.removeProperty('background-color');
+        container.style.removeProperty('transition');
+        container.querySelector('.ql-editor').style.removeProperty('background-color');
+        container.querySelector('.ql-editor').style.removeProperty('transition');
+        container.querySelector('#editor-wrapper').style.removeProperty('background-color');
+        container.querySelector('#editor-wrapper').style.removeProperty('transition');
+        container.querySelector('#editor').style.removeProperty('background-color');
+        container.querySelector('#editor').style.removeProperty('transition');
+        
+        // Set 2-second transition for fading out red
+        container.style.transition = 'background-color 2s ease-out';
+        container.querySelector('.ql-editor').style.transition = 'background-color 2s ease-out';
+        container.querySelector('#editor-wrapper').style.transition = 'background-color 2s ease-out';
+        container.querySelector('#editor').style.transition = 'background-color 2s ease-out';
+        
+        container.classList.remove('nuclear-active', 'punishment-warning', 'transitioning');
+        stopAlarm(); // Stop the alarm sound
+        stopTextDeletion();
+        
+        // Reset transitions after fade completes
+        setTimeout(() => {
+            container.style.transition = '';
+            container.querySelector('.ql-editor').style.transition = '';
+            container.querySelector('#editor-wrapper').style.transition = '';
+            container.querySelector('#editor').style.transition = '';
+        }, 2000);
     }
     
     // Handle typing activity
     function onTypingActivity() {
+        console.log('*** onTypingActivity triggered, isAppDeletingText:', isAppDeletingText, 'gamificationMode:', gamificationMode);
         lastTypingTime = Date.now();
         
         // Skip gamification in freewrite mode
@@ -781,7 +845,7 @@
         }
         
         // Stop any active consequences and warning states
-        if (gamificationMode === 'punishment' || gamificationMode === 'nuclear') {
+        if (gamificationMode === 'punishment') {
             const container = document.querySelector('.editor-container');
             
             // Clear any warning state immediately when user starts typing
@@ -790,6 +854,38 @@
             }
             
             stopConsequences();
+        } else if (gamificationMode === 'nuclear') {
+            const container = document.querySelector('.editor-container');
+            
+            // Clear any warning state immediately when user starts typing
+            if (container.classList.contains('punishment-warning') || container.classList.contains('transitioning')) {
+                container.classList.remove('punishment-warning', 'transitioning');
+            }
+            
+            // Only stop nuclear consequences if deletion is not active
+            if (!nuclearTimer) {
+                console.log('*** User typing, no deletion active, stopping nuclear consequences');
+                stopNuclearConsequences();
+            } else {
+                console.log('*** User typing but deletion still active, scheduling deletion stop');
+                // Stop alarm immediately but keep red screen
+                stopAlarm();
+                
+                // Schedule deletion stop after a short delay to allow red screen to stay during active deletion
+                setTimeout(() => {
+                    console.log('*** Delayed stop: checking if deletion should stop');
+                    if (nuclearTimer) {
+                        console.log('*** Stopping text deletion after user input delay');
+                        stopTextDeletion();
+                        
+                        // After stopping deletion, stop nuclear consequences
+                        setTimeout(() => {
+                            console.log('*** Stopping nuclear consequences after deletion stopped');
+                            stopNuclearConsequences();
+                        }, 100);
+                    }
+                }, 500); // Keep red screen for 0.5 seconds after user starts typing
+            }
         }
         
         // Reset inactivity timer
@@ -807,6 +903,8 @@
         if (warningTimer) {
             clearTimeout(warningTimer);
         }
+        
+        // Text deletion is now stopped directly in keyboard event handlers
         
         if (gamificationMode === 'punishment' || gamificationMode === 'nuclear') {
             const userGracePeriod = (gamificationMode === 'nuclear' ? 
@@ -836,6 +934,15 @@
             inactivityTimer = setTimeout(() => {
                 console.log(`${gamificationMode} consequences triggered after ${totalTime} seconds of inactivity`);
                 container.classList.remove('punishment-warning', 'transitioning');
+                
+                // Clear any lingering transition styles that might interfere with nuclear mode
+                if (gamificationMode === 'nuclear') {
+                    container.style.transition = '';
+                    container.querySelector('.ql-editor').style.transition = '';
+                    container.querySelector('#editor-wrapper').style.transition = '';
+                    container.querySelector('#editor').style.transition = '';
+                }
+                
                 startConsequences();
             }, totalTime * 1000);
         }
@@ -913,8 +1020,10 @@
     
     // Disable gamification modes for freewrite sessions
     function disableGamificationModes() {
+        console.log('*** disableGamificationModes called');
         // Stop any active consequences
         stopConsequences();
+        stopNuclearConsequences();
         
         // Clear any active timers
         if (inactivityTimer) {
@@ -1135,7 +1244,12 @@
 
     // Word count tracking
     quill.on('text-change', function(delta, oldDelta, source) {
+        console.log('*** text-change event: source =', source, 'isAppDeletingText =', isAppDeletingText);
         if (source !== 'user') return;
+        if (isAppDeletingText) {
+            console.log('*** text-change ignored due to isAppDeletingText flag');
+            return; // Ignore changes when app is deleting text
+        }
         
         const text = quill.getText();
         const words = text.trim().split(/\s+/).filter(word => word.length > 0);
@@ -1189,6 +1303,11 @@
         
         // Track typing activity for punishment/nuclear modes
         if (e.target.closest('.ql-editor')) {
+            if (isAppDeletingText) {
+                console.log('*** keydown detected during app deletion, will stop deletion after delay');
+                // Don't stop deletion immediately - let onTypingActivity handle it
+            }
+            console.log('*** keydown detected, calling onTypingActivity');
             onTypingActivity();
         }
     });
@@ -1196,6 +1315,11 @@
     document.addEventListener('keyup', function(e) {
         // Additional typing activity tracking
         if (e.target.closest('.ql-editor')) {
+            if (isAppDeletingText) {
+                console.log('*** keyup detected during app deletion, will stop deletion after delay');
+                // Don't stop deletion immediately - let onTypingActivity handle it
+            }
+            console.log('*** keyup detected, calling onTypingActivity');
             onTypingActivity();
         }
     });
@@ -1522,6 +1646,27 @@
                 </svg>`;
         }
     });
+    
+    // Debug: Watch for nuclear-active class changes
+    const container = document.querySelector('.editor-container');
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const hasNuclearActive = container.classList.contains('nuclear-active');
+                console.log('*** Class change detected. nuclear-active:', hasNuclearActive, 'isAppDeletingText:', isAppDeletingText);
+                
+                // Always show stack trace when nuclear-active changes
+                if (hasNuclearActive) {
+                    console.log('*** nuclear-active was ADDED. Stack trace:');
+                    console.trace();
+                } else if (!hasNuclearActive) {
+                    console.log('*** nuclear-active was REMOVED. Stack trace:');
+                    console.trace();
+                }
+            }
+        });
+    });
+    observer.observe(container, { attributes: true, attributeFilter: ['class'] });
     
     // Focus the editor
     quill.focus();

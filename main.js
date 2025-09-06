@@ -948,7 +948,9 @@ ipcMain.on('get-detailed-stats', async (event) => {
     today: stats.dailyStats?.[today] || { words: 0, sessions: 0, timeSpent: 0 },
     streak: prefs?.currentStreak || 0,
     dailyData: dailyData,
-    recentSessions: (stats.sessionLogs || []).slice(-10).reverse(),
+    recentSessions: (stats.sessionLogs || [])
+      .filter(session => session.filename && session.filename !== 'unknown' && session.newWords > 0)
+      .slice(-10).reverse(),
     topSessions: topSessions,
     // New statistics
     totalSuccessfulSessions: totalSuccessfulSessions,
