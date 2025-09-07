@@ -1535,6 +1535,112 @@ ipcMain.on('disable-goal-prompting', (event) => {
   console.log('Goal prompting disabled');
 });
 
+// New Sleek Tutorial System
+// Check for first time initialization
+ipcMain.on('check-first-time', async (event) => {
+  const settings = store.get('userPreferences');
+  const stats = await loadStats();
+  
+  // Check if tutorial has been completed
+  const tutorialCompleted = stats.completedTutorial === true;
+  
+  // Check if this is the first time (no settings exist or no pageVisits recorded)
+  const isFirstTime = !settings || !settings.pageVisits || Object.keys(settings.pageVisits).length === 0;
+  
+  console.log('Checking first time:', { isFirstTime, tutorialCompleted });
+  
+  if (isFirstTime && !tutorialCompleted) {
+    console.log('First time user - showing sleek welcome modal');
+    event.reply('show-welcome');
+  } else if (tutorialCompleted) {
+    console.log('Tutorial already completed, skipping welcome');
+    // Existing user who completed tutorial - check for goal setup if needed
+    const longTermGoals = settings.longTermGoals || {};
+    
+    if (!longTermGoals.enabled && !longTermGoals.disablePrompting) {
+      console.log('Showing goal setup modal for existing user');
+      event.reply('show-goal-setup');
+    }
+  } else {
+    // Existing user who hasn't completed tutorial - check for goal setup as before
+    const longTermGoals = settings.longTermGoals || {};
+    
+    if (!longTermGoals.enabled && !longTermGoals.disablePrompting) {
+      console.log('Showing goal setup modal');
+      event.reply('show-goal-setup');
+    }
+  }
+});
+
+// Tutorial folder selection
+ipcMain.on('select-tutorial-folder', async (event) => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openDirectory'],
+      title: 'Select Your Writing Folder',
+      message: 'Choose where Focus Writer will save your documents',
+      buttonLabel: 'Select Folder'
+    });
+    
+    if (!result.canceled && result.filePaths.length > 0) {
+      const folderPath = result.filePaths[0];
+      console.log('Tutorial folder selected:', folderPath);
+      
+      // Save the folder path to settings
+      const settings = store.get('userPreferences', {});
+      settings.documentsFolder = folderPath;
+      store.set('userPreferences', settings);
+      
+      event.reply('tutorial-folder-selected', folderPath);
+    }
+  } catch (error) {
+    console.error('Error selecting tutorial folder:', error);
+    dialog.showErrorBox('Folder Selection Error', 'Could not select folder. Please try again.');
+  }
+});
+
+// Disable long-term goals (for tutorial)
+ipcMain.on('disable-long-term-goals', (event) => {
+  console.log('Disabling long-term goals from tutorial');
+  
+  const settings = store.get('userPreferences', {});
+  settings.longTermGoals = {
+    ...settings.longTermGoals,
+    enabled: false,
+    disablePrompting: true
+  };
+  store.set('userPreferences', settings);
+});
+
+// Mark tutorial as completed
+ipcMain.on('tutorial-completed', async (event) => {
+  console.log('Tutorial completed by user');
+  
+  // Update stats to mark tutorial as completed
+  const stats = await loadStats();
+  stats.completedTutorial = true;
+  await saveStats(stats);
+  
+  // Check for tutorial graduate achievement
+  const achievements = require('./achievements.js');
+  const achievementSystem = new achievements();
+  const currentAchievements = store.get('userPreferences.unlockedAchievements', []);
+  
+  const newUnlocks = achievementSystem.checkAchievements(stats, null, currentAchievements);
+  
+  if (newUnlocks.length > 0) {
+    console.log('New achievements unlocked:', newUnlocks);
+    
+    // Update achievements in settings
+    const settings = store.get('userPreferences', {});
+    settings.unlockedAchievements = [...currentAchievements, ...newUnlocks];
+    store.set('userPreferences', settings);
+    
+    // Send achievement notification
+    event.reply('achievements-unlocked', newUnlocks);
+  }
+});
+
 // In main.js, add this temporary logging
 ipcMain.on('debug-stats', async (event) => {
   const stats = await loadStats();

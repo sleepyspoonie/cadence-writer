@@ -232,6 +232,15 @@ class AchievementSystem {
                 condition: (stats, session) => stats.visitedAbout === true
             },
             
+            tutorialGraduate: {
+                id: 'tutorialGraduate',
+                name: 'Tutorial Graduate',
+                description: 'Complete the welcome tutorial',
+                icon: '🎓',
+                hidden: false,
+                condition: (stats, session) => stats.completedTutorial === true
+            },
+            
             dataAnalyst: {
                 id: 'dataAnalyst',
                 name: 'Data Analyst',
@@ -606,7 +615,7 @@ class AchievementSystem {
         const newUnlocks = [];
         
         // Debug navigation and time achievements specifically
-        const navigationIds = ['eruditeEducator', 'dataAnalyst', 'fileExplorer', 'tinkerer'];
+        const navigationIds = ['eruditeEducator', 'tutorialGraduate', 'dataAnalyst', 'fileExplorer', 'tinkerer'];
         const timeIds = ['warmingUp', 'inTheZone', 'firstWatch', 'theGrind', 'throughTheNight', 'dayOfWriting', 'flowState', 'centuryScribe'];
         const sessionIds = ['speedWriter', 'marathoner'];
         const timeSpecificIds = ['lunchBreakNovelist', 'nightOwl', 'earlyBird', 'witchingHour', 'deadlinePanic'];

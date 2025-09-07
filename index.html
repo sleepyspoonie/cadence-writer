@@ -155,6 +155,110 @@
         </div>
     </div>
 
+<!-- Sleek Welcome Modal -->
+<div class="tutorial-overlay" id="welcomeOverlay" style="display: none;">
+  <div class="tutorial-modal sleek-welcome">
+    <div class="welcome-icon">✨</div>
+    <h1>Welcome to Focus Writer</h1>
+    <p class="welcome-subtitle">Your distraction-free writing sanctuary</p>
+    
+    <div class="welcome-step" id="welcomeStep1">
+      <h3>First, let's set up your writing folder</h3>
+      <p>Choose where you'd like your documents to be saved</p>
+      <button class="tutorial-btn primary" id="selectFolderBtn">
+        <span class="btn-icon">📁</span>
+        Select Folder
+      </button>
+    </div>
+    
+    <div class="welcome-step" id="welcomeStep2" style="display: none;">
+      <h3>Perfect! Now for a quick tour</h3>
+      <p>Let's show you around Focus Writer so you can make the most of your writing sessions</p>
+      <button class="tutorial-btn primary" id="startTourBtn">
+        <span class="btn-icon">🚀</span>
+        Start Tour
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Spotlight Tutorial System -->
+<div class="tutorial-spotlight" id="tutorialSpotlight" style="display: none;">
+  <div class="tutorial-overlay-dark"></div>
+  <div class="tutorial-tooltip" id="tutorialTooltip">
+    <div class="tooltip-content">
+      <h3 id="tooltipTitle">Title</h3>
+      <p id="tooltipText">Description</p>
+      <div class="tooltip-navigation">
+        <button class="tutorial-btn secondary" id="tutorialPrev" style="display: none;">
+          <span class="btn-icon">←</span>
+          Previous
+        </button>
+        <div class="tutorial-progress">
+          <span id="tutorialProgress">1 / 8</span>
+        </div>
+        <button class="tutorial-btn primary" id="tutorialNext">
+          Next
+          <span class="btn-icon">→</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Goal Preference Modal -->
+<div class="tutorial-overlay" id="goalPreferenceOverlay" style="display: none;">
+  <div class="tutorial-modal goal-preference">
+    <div class="preference-icon">🎯</div>
+    <h2>Would you like to set a daily writing goal?</h2>
+    <p class="preference-subtitle">Goals help track your progress and build writing habits</p>
+    
+    <div class="preference-buttons">
+      <button class="tutorial-btn secondary" id="goalLaterBtn">
+        <span class="btn-icon">⏰</span>
+        Maybe Later
+      </button>
+      <button class="tutorial-btn primary" id="goalNowBtn">
+        <span class="btn-icon">✓</span>
+        Yes, Let's Set One
+      </button>
+    </div>
+    
+    <p class="preference-note">Don't worry - you can always change this in Settings</p>
+  </div>
+</div>
+
+<!-- Tutorial Complete Modal -->
+<div class="tutorial-overlay" id="tutorialCompleteOverlay" style="display: none;">
+  <div class="tutorial-modal tutorial-complete">
+    <div class="complete-animation">
+      <div class="complete-icon">🎓</div>
+      <div class="complete-sparkles">
+        <span class="sparkle">✨</span>
+        <span class="sparkle">⭐</span>
+        <span class="sparkle">✨</span>
+      </div>
+    </div>
+    <h2>You're all set!</h2>
+    <p class="complete-subtitle">Welcome to Focus Writer - your journey begins now</p>
+    
+    <div class="achievement-unlock">
+      <div class="achievement-badge">
+        <span class="achievement-icon">🎓</span>
+        <div class="achievement-info">
+          <strong>Tutorial Graduate</strong>
+          <span>Achievement Unlocked!</span>
+        </div>
+      </div>
+    </div>
+    
+    <button class="tutorial-btn primary" id="finishTutorialBtn">
+      <span class="btn-icon">🚀</span>
+      Start Writing
+    </button>
+  </div>
+</div>
+
 <!-- Long-term Goal Setup Modal -->
 <div class="goal-overlay" id="goalOverlay" style="display: none;">
   <div class="goal-modal">
@@ -210,6 +314,367 @@
     const path = require('path');
     
     console.log('Script initialized - waiting for settings...');
+    
+    // New Tutorial System
+    const tutorialSteps = [
+      {
+        target: '.optionsnav li:first-child',
+        title: 'Home',
+        text: 'This is your homepage - your writing command center. Configure sessions and start writing from here.',
+        position: 'bottom-left'
+      },
+      {
+        target: '.optionsnav a[href="about.html"]',
+        title: 'About',
+        text: 'Version information and helpful resources for Focus Writer.',
+        position: 'bottom'
+      },
+      {
+        target: '.optionsnav a[href="files.html"]',
+        title: 'Files',
+        text: 'Manage all your writing projects. Browse, open, and organize your documents.',
+        position: 'bottom'
+      },
+      {
+        target: '.optionsnav a[href="statistics.html"]',
+        title: 'Statistics',
+        text: 'Track your progress, view achievements, and monitor your writing streaks.',
+        position: 'bottom'
+      },
+      {
+        target: '.optionsnav a[href="settings.html"]',
+        title: 'Settings',
+        text: 'Customize Focus Writer - themes, gamification modes, and editor preferences.',
+        position: 'bottom'
+      },
+      {
+        target: '.settings-toggle',
+        title: 'Writing Modes',
+        text: 'Choose between Timer mode (write for a set time) or Word Count mode (write until you reach your goal).',
+        position: 'right'
+      },
+      {
+        target: '.mode-selection',
+        title: 'Writing Modes',
+        text: 'Select your writing style: Focus, Reward, Punishment, or Nuclear mode to stay motivated.',
+        position: 'right'
+      },
+      {
+        target: '.documentselect',
+        title: 'Start Writing',
+        text: 'Choose to start a new project, open your most recent work, or browse existing documents.',
+        position: 'right'
+      }
+    ];
+    
+    let currentStep = 0;
+    let spotlightElement = null;
+    
+    function showWelcome() {
+      const overlay = document.getElementById('welcomeOverlay');
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '0';
+      
+      setTimeout(() => {
+        overlay.style.opacity = '1';
+      }, 150);
+    }
+    
+    function hideWelcome() {
+      const overlay = document.getElementById('welcomeOverlay');
+      overlay.style.opacity = '0';
+      
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 300);
+    }
+    
+    function showStep2() {
+      document.getElementById('welcomeStep1').style.display = 'none';
+      document.getElementById('welcomeStep2').style.display = 'block';
+    }
+    
+    function startSpotlightTour() {
+      hideWelcome();
+      currentStep = 0;
+      setTimeout(() => {
+        showSpotlightStep(currentStep);
+      }, 500);
+    }
+    
+    function showSpotlightStep(stepIndex) {
+      const step = tutorialSteps[stepIndex];
+      const target = document.querySelector(step.target);
+      
+      if (!target) {
+        console.error('Target not found:', step.target);
+        return;
+      }
+      
+      // Show spotlight overlay
+      const spotlight = document.getElementById('tutorialSpotlight');
+      spotlight.style.display = 'block';
+      
+      // Create spotlight effect
+      createSpotlight(target);
+      
+      // Position and show tooltip
+      positionTooltip(target, step);
+      
+      // Update tooltip content
+      document.getElementById('tooltipTitle').textContent = step.title;
+      document.getElementById('tooltipText').textContent = step.text;
+      document.getElementById('tutorialProgress').textContent = `${stepIndex + 1} / ${tutorialSteps.length}`;
+      
+      // Update navigation buttons
+      const prevBtn = document.getElementById('tutorialPrev');
+      const nextBtn = document.getElementById('tutorialNext');
+      
+      prevBtn.style.display = stepIndex > 0 ? 'inline-flex' : 'none';
+      nextBtn.textContent = stepIndex === tutorialSteps.length - 1 ? 'Finish Tour' : 'Next';
+    }
+    
+    function createSpotlight(target) {
+      const rect = target.getBoundingClientRect();
+      const overlay = document.querySelector('.tutorial-overlay-dark');
+      
+      // Create spotlight effect with CSS custom properties
+      const spotlightX = rect.left + rect.width / 2;
+      const spotlightY = rect.top + rect.height / 2;
+      const spotlightWidth = rect.width + 20;
+      const spotlightHeight = rect.height + 20;
+      
+      overlay.style.setProperty('--spotlight-x', spotlightX + 'px');
+      overlay.style.setProperty('--spotlight-y', spotlightY + 'px');
+      overlay.style.setProperty('--spotlight-width', spotlightWidth + 'px');
+      overlay.style.setProperty('--spotlight-height', spotlightHeight + 'px');
+      
+      // Ensure target is above overlay
+      target.style.position = 'relative';
+      target.style.zIndex = '1001';
+      spotlightElement = target;
+    }
+    
+    function positionTooltip(target, step) {
+      const tooltip = document.getElementById('tutorialTooltip');
+      const rect = target.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      tooltip.style.position = 'fixed';
+      tooltip.style.zIndex = '1002';
+      
+      // Get tooltip dimensions (show it temporarily to measure)
+      tooltip.style.visibility = 'hidden';
+      tooltip.style.display = 'block';
+      const tooltipRect = tooltip.getBoundingClientRect();
+      tooltip.style.visibility = 'visible';
+      
+      let finalLeft, finalTop, transform;
+      
+      switch(step.position) {
+        case 'bottom':
+          finalTop = rect.bottom + 20;
+          finalLeft = rect.left + rect.width / 2;
+          transform = 'translateX(-50%)';
+          
+          // Special handling for navigation items that might be at screen edge
+          const minLeft = 20; // More margin for nav items
+          const maxRight = viewportWidth - 20;
+          
+          // Prevent horizontal overflow with better margins
+          if (finalLeft - tooltipRect.width / 2 < minLeft) {
+            finalLeft = minLeft + tooltipRect.width / 2;
+            // For items near the left edge, align tooltip to the left side of target
+            if (rect.left < 100) { // If target is very close to left edge
+              finalLeft = Math.max(minLeft + tooltipRect.width / 2, rect.left + tooltipRect.width / 2);
+              transform = 'translateX(-25%)'; // Less centering for edge items
+            }
+          } else if (finalLeft + tooltipRect.width / 2 > maxRight) {
+            finalLeft = maxRight - tooltipRect.width / 2;
+          }
+          
+          // If tooltip would go below viewport, position above instead
+          if (finalTop + tooltipRect.height > viewportHeight - 10) {
+            finalTop = rect.top - 20;
+            // Keep the same horizontal positioning but change vertical transform
+            if (transform === 'translateX(-25%)') {
+              transform = 'translate(-25%, -100%)';
+            } else {
+              transform = 'translate(-50%, -100%)';
+            }
+          }
+          break;
+          
+        case 'bottom-left':
+          finalTop = rect.bottom + 20;
+          finalLeft = rect.left;
+          transform = 'translateX(0)'; // No centering, align to left edge of target
+          
+          // Ensure tooltip doesn't go off left edge
+          if (finalLeft < 20) {
+            finalLeft = 20;
+          }
+          
+          // Ensure tooltip doesn't go off right edge  
+          if (finalLeft + tooltipRect.width > viewportWidth - 20) {
+            finalLeft = viewportWidth - 20 - tooltipRect.width;
+          }
+          
+          // If tooltip would go below viewport, position above instead
+          if (finalTop + tooltipRect.height > viewportHeight - 10) {
+            finalTop = rect.top - 20;
+            transform = 'translate(0, -100%)';
+          }
+          break;
+          
+        case 'right':
+          finalTop = rect.top + rect.height / 2;
+          finalLeft = rect.right + 20;
+          transform = 'translateY(-50%)';
+          
+          // If tooltip would go off right edge, position left instead
+          if (finalLeft + tooltipRect.width > viewportWidth - 10) {
+            finalLeft = rect.left - 20;
+            transform = 'translate(-100%, -50%)';
+          }
+          
+          // Prevent vertical overflow
+          if (finalTop - tooltipRect.height / 2 < 10) {
+            finalTop = 10 + tooltipRect.height / 2;
+          } else if (finalTop + tooltipRect.height / 2 > viewportHeight - 10) {
+            finalTop = viewportHeight - 10 - tooltipRect.height / 2;
+          }
+          break;
+          
+        case 'left':
+          finalTop = rect.top + rect.height / 2;
+          finalLeft = rect.left - 20;
+          transform = 'translate(-100%, -50%)';
+          
+          // If tooltip would go off left edge, position right instead
+          if (finalLeft - tooltipRect.width < 10) {
+            finalLeft = rect.right + 20;
+            transform = 'translateY(-50%)';
+          }
+          
+          // Prevent vertical overflow
+          if (finalTop - tooltipRect.height / 2 < 10) {
+            finalTop = 10 + tooltipRect.height / 2;
+          } else if (finalTop + tooltipRect.height / 2 > viewportHeight - 10) {
+            finalTop = viewportHeight - 10 - tooltipRect.height / 2;
+          }
+          break;
+          
+        case 'top':
+          finalTop = rect.top - 20;
+          finalLeft = rect.left + rect.width / 2;
+          transform = 'translate(-50%, -100%)';
+          
+          // Prevent horizontal overflow
+          if (finalLeft - tooltipRect.width / 2 < 10) {
+            finalLeft = 10 + tooltipRect.width / 2;
+          } else if (finalLeft + tooltipRect.width / 2 > viewportWidth - 10) {
+            finalLeft = viewportWidth - 10 - tooltipRect.width / 2;
+          }
+          
+          // If tooltip would go above viewport, position below instead
+          if (finalTop - tooltipRect.height < 10) {
+            finalTop = rect.bottom + 20;
+            transform = 'translateX(-50%)';
+          }
+          break;
+      }
+      
+      tooltip.style.top = finalTop + 'px';
+      tooltip.style.left = finalLeft + 'px';
+      tooltip.style.transform = transform;
+    }
+    
+    function nextTutorialStep() {
+      if (spotlightElement) {
+        spotlightElement.style.position = '';
+        spotlightElement.style.zIndex = '';
+        spotlightElement = null;
+      }
+      
+      if (currentStep < tutorialSteps.length - 1) {
+        currentStep++;
+        showSpotlightStep(currentStep);
+      } else {
+        // Tour complete
+        hideSpotlight();
+        showGoalPreference();
+      }
+    }
+    
+    function prevTutorialStep() {
+      if (spotlightElement) {
+        spotlightElement.style.position = '';
+        spotlightElement.style.zIndex = '';
+        spotlightElement = null;
+      }
+      
+      if (currentStep > 0) {
+        currentStep--;
+        showSpotlightStep(currentStep);
+      }
+    }
+    
+    function hideSpotlight() {
+      const spotlight = document.getElementById('tutorialSpotlight');
+      spotlight.style.display = 'none';
+      
+      if (spotlightElement) {
+        spotlightElement.style.position = '';
+        spotlightElement.style.zIndex = '';
+        spotlightElement = null;
+      }
+    }
+    
+    function showGoalPreference() {
+      const overlay = document.getElementById('goalPreferenceOverlay');
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '0';
+      
+      setTimeout(() => {
+        overlay.style.opacity = '1';
+      }, 150);
+    }
+    
+    function hideGoalPreference() {
+      const overlay = document.getElementById('goalPreferenceOverlay');
+      overlay.style.opacity = '0';
+      
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 300);
+    }
+    
+    function showTutorialComplete() {
+      const overlay = document.getElementById('tutorialCompleteOverlay');
+      overlay.style.display = 'flex';
+      overlay.style.opacity = '0';
+      
+      setTimeout(() => {
+        overlay.style.opacity = '1';
+      }, 150);
+    }
+    
+    function hideTutorialComplete() {
+      const overlay = document.getElementById('tutorialCompleteOverlay');
+      overlay.style.opacity = '0';
+      
+      setTimeout(() => {
+        overlay.style.display = 'none';
+        // Mark tutorial as completed
+        ipcRenderer.send('tutorial-completed');
+      }, 300);
+    }
+    
+    function checkFirstTime() {
+      ipcRenderer.send('check-first-time');
+    }
     
     // Celebration modal functions (global scope)
     function showCelebrationModal() {
@@ -285,14 +750,78 @@
         showModal();
     });
     
+    // New Tutorial IPC Event Listeners
+    ipcRenderer.on('show-welcome', () => {
+        showWelcome();
+    });
+    
+    ipcRenderer.on('tutorial-folder-selected', (event, folderPath) => {
+        console.log('Tutorial folder selected:', folderPath);
+        showStep2();
+    });
+    
+    // Update existing goal setup completion to show tutorial complete
+    const originalStartGoal = document.getElementById('startGoalBtn');
+    const originalDisableGoal = document.getElementById('disableGoalBtn');
+    const originalCloseModal = document.getElementById('modalClose');
+    
+    // Handle tutorial achievement unlock
+    ipcRenderer.on('achievements-unlocked', (event, achievements) => {
+        console.log('Tutorial achievements unlocked:', achievements);
+        // The achievement notification system will handle showing these
+        if (window.achievementNotifier) {
+            achievements.forEach(achievement => {
+                window.achievementNotifier.showAchievement(achievement);
+            });
+        }
+    });
+    
     // Check for recent file and request stats on load
     document.addEventListener('DOMContentLoaded', () => {
         console.log('DOM loaded - adding event listeners');
         updateRecentFileOption();
-        checkForGoalSetup();
+        
+        // Check for first time initialization instead of goal setup immediately
+        checkFirstTime();
         
         // Request homepage stats
         ipcRenderer.send('get-homepage-stats');
+        
+        // New Tutorial System Event Listeners
+        document.getElementById('selectFolderBtn').addEventListener('click', () => {
+          ipcRenderer.send('select-tutorial-folder');
+        });
+        
+        document.getElementById('startTourBtn').addEventListener('click', () => {
+          startSpotlightTour();
+        });
+        
+        document.getElementById('tutorialNext').addEventListener('click', () => {
+          nextTutorialStep();
+        });
+        
+        document.getElementById('tutorialPrev').addEventListener('click', () => {
+          prevTutorialStep();
+        });
+        
+        document.getElementById('goalNowBtn').addEventListener('click', () => {
+          hideGoalPreference();
+          // Show the existing long-term goal modal
+          setTimeout(() => {
+            showModal();
+          }, 300);
+        });
+        
+        document.getElementById('goalLaterBtn').addEventListener('click', () => {
+          hideGoalPreference();
+          // Disable long-term goals
+          ipcRenderer.send('disable-long-term-goals');
+          showTutorialComplete();
+        });
+        
+        document.getElementById('finishTutorialBtn').addEventListener('click', () => {
+          hideTutorialComplete();
+        });
         
         // Long-term goals event listeners
         document.getElementById('goalTotalWords').addEventListener('input', updateWordsPerDay);
@@ -310,11 +839,19 @@
             });
             
             hideModal();
+            // If this is during tutorial, show completion
+            if (document.getElementById('tutorialCompleteOverlay')) {
+                showTutorialComplete();
+            }
         });
 
         document.getElementById('disableGoalBtn').addEventListener('click', () => {
             ipcRenderer.send('disable-goal-prompting');
             hideModal();
+            // If this is during tutorial, show completion
+            if (document.getElementById('tutorialCompleteOverlay')) {
+                showTutorialComplete();
+            }
         });
         
         // Mode toggle handler
@@ -351,6 +888,10 @@
         document.getElementById('modalClose').addEventListener('click', () => {
             ipcRenderer.send('disable-goal-prompting');
             hideModal();
+            // If this is during tutorial, show completion
+            if (document.getElementById('tutorialCompleteOverlay')) {
+                showTutorialComplete();
+            }
         });
 
         // Overlay click handler (but not when clicking the modal itself)
@@ -358,6 +899,10 @@
             if (e.target.id === 'goalOverlay') {
                 ipcRenderer.send('disable-goal-prompting');
                 hideModal();
+                // If this is during tutorial, show completion
+                if (document.getElementById('tutorialCompleteOverlay')) {
+                    showTutorialComplete();
+                }
             }
         });
 
