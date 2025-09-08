@@ -1166,26 +1166,49 @@
     }
 
     function saveCurrentSettingsSync(sessionSettings) {
+        // This function is called when starting a session, so we need to preserve existing gamification settings
+        // We'll use an async approach to ensure we don't overwrite the detailed settings
+        
         // Get current active mode
         const activeModeBtn = document.querySelector('.mode-btn.active');
         const gamificationMode = activeModeBtn ? activeModeBtn.dataset.mode : 'focus';
         
-        // Create settings object directly without async IPC call
-        const settings = {
-            mode: document.getElementById('modeToggle').checked ? 'wordcount' : 'timer',
-            timerDuration: parseInt(document.getElementById('timerSlider').value),
-            wordCountGoal: parseInt(document.getElementById('wordCountSlider').value),
-            documentOption: document.querySelector('input[name="docOption"]:checked').value,
-            gamificationSettings: {
-                mode: gamificationMode
-            }
-        };
-        
-        // Merge with session settings if provided
-        const finalSettings = { ...settings, ...sessionSettings };
-        
-        ipcRenderer.send('save-settings', finalSettings);
-        console.log('Settings saved:', finalSettings);
+        // Get current settings first to preserve gamification settings
+        ipcRenderer.send('get-settings');
+        ipcRenderer.once('load-settings', (event, currentSettings) => {
+            // Merge with default gamification settings to ensure all properties exist
+            const defaultGamificationSettings = {
+                mode: 'focus',
+                rewardWords: 100,
+                rewardType: 'sound',
+                gracePeriod: 10,
+                punishType: 'sound',
+                nuclearGracePeriod: 10,
+                deletionSpeed: 5,
+                disableStreak: false,
+                disableAchievements: false
+            };
+            
+            const existingGamificationSettings = currentSettings?.gamificationSettings || {};
+            
+            const settings = {
+                mode: document.getElementById('modeToggle').checked ? 'wordcount' : 'timer',
+                timerDuration: parseInt(document.getElementById('timerSlider').value),
+                wordCountGoal: parseInt(document.getElementById('wordCountSlider').value),
+                documentOption: document.querySelector('input[name="docOption"]:checked').value,
+                gamificationSettings: {
+                    ...defaultGamificationSettings,
+                    ...existingGamificationSettings,
+                    mode: gamificationMode
+                }
+            };
+            
+            // Merge with session settings if provided
+            const finalSettings = { ...settings, ...sessionSettings };
+            
+            ipcRenderer.send('save-settings', finalSettings);
+            console.log('Session settings saved:', finalSettings);
+        });
     }
     
     // Keep the old async version for other uses
@@ -1197,6 +1220,19 @@
         // Get current settings to preserve existing gamificationSettings
         ipcRenderer.send('get-settings');
         ipcRenderer.once('load-settings', (event, currentSettings) => {
+            // Merge with default gamification settings to ensure all properties exist
+            const defaultGamificationSettings = {
+                mode: 'focus',
+                rewardWords: 100,
+                rewardType: 'sound',
+                gracePeriod: 10,
+                punishType: 'sound',
+                nuclearGracePeriod: 10,
+                deletionSpeed: 5,
+                disableStreak: false,
+                disableAchievements: false
+            };
+            
             const existingGamificationSettings = currentSettings?.gamificationSettings || {};
             
             const settings = {
@@ -1205,6 +1241,7 @@
                 wordCountGoal: parseInt(document.getElementById('wordCountSlider').value),
                 documentOption: document.querySelector('input[name="docOption"]:checked').value,
                 gamificationSettings: {
+                    ...defaultGamificationSettings,
                     ...existingGamificationSettings,
                     mode: gamificationMode
                 }
@@ -1219,18 +1256,32 @@
         // Get current settings to preserve everything else
         ipcRenderer.send('get-settings');
         ipcRenderer.once('load-settings', (event, currentSettings) => {
+            // Merge with default gamification settings to ensure all properties exist
+            const defaultGamificationSettings = {
+                mode: 'focus',
+                rewardWords: 100,
+                rewardType: 'sound',
+                gracePeriod: 10,
+                punishType: 'sound',
+                nuclearGracePeriod: 10,
+                deletionSpeed: 5,
+                disableStreak: false,
+                disableAchievements: false
+            };
+            
             const existingGamificationSettings = currentSettings?.gamificationSettings || {};
             
             const settings = {
                 ...currentSettings,
                 gamificationSettings: {
+                    ...defaultGamificationSettings,
                     ...existingGamificationSettings,
                     mode: selectedMode
                 }
             };
             
             ipcRenderer.send('save-settings', settings);
-            console.log('Gamification mode saved:', selectedMode);
+            console.log('Gamification mode saved:', selectedMode, 'with full settings:', settings.gamificationSettings);
         });
     }
 

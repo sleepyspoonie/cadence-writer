@@ -126,6 +126,15 @@ ipcMain.on('toggle-fullscreen', (event) => {
   event.reply('fullscreen-changed', !isFullscreen);
 });
 
+// Set fullscreen (for auto fullscreen - ensures fullscreen is enabled)
+ipcMain.on('set-fullscreen', (event, shouldBeFullscreen) => {
+  const isFullscreen = mainWindow.isFullScreen();
+  if (isFullscreen !== shouldBeFullscreen) {
+    mainWindow.setFullScreen(shouldBeFullscreen);
+    event.reply('fullscreen-changed', shouldBeFullscreen);
+  }
+});
+
 // Folder selection
 ipcMain.on('select-folder', async (event) => {
   const result = await dialog.showOpenDialog(mainWindow, {

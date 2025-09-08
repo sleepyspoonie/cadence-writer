@@ -602,6 +602,12 @@
             if (settings && settings.gamificationSettings) {
                 gamificationSettings = settings.gamificationSettings;
                 gamificationMode = gamificationSettings.mode || 'focus';
+                console.log('🔧 Gamification settings loaded:', {
+                    mode: gamificationMode,
+                    rewardWords: gamificationSettings.rewardWords,
+                    rewardWordsWithDefault: gamificationSettings.rewardWords || 100,
+                    allSettings: gamificationSettings
+                });
             }
             
             if (settings && settings.editorSettings) {
@@ -623,7 +629,7 @@
                 if (editorSettings.autoFullscreen) {
                     console.log('Auto fullscreen enabled, entering fullscreen mode');
                     setTimeout(() => {
-                        ipcRenderer.send('toggle-fullscreen');
+                        ipcRenderer.send('set-fullscreen', true);
                     }, 500); // Small delay to ensure page is fully loaded
                 }
                 
@@ -637,6 +643,15 @@
     // Setup game mode effects
     function setupGameMode() {
         console.log('*** setupGameMode called, isAppDeletingText:', isAppDeletingText);
+        
+        // Safety cleanup: ensure clean state when setting up game mode
+        if (nuclearTimer) {
+            console.log('*** Safety: clearing existing nuclear timer on setup');
+            clearInterval(nuclearTimer);
+            nuclearTimer = null;
+        }
+        isAppDeletingText = false;
+        
         const container = document.querySelector('.editor-container');
         
         // Reset classes
@@ -971,12 +986,21 @@
     
     // Stop text deletion
     function stopTextDeletion() {
+        console.log('*** stopTextDeletion called, clearing timer and flag');
         if (nuclearTimer) {
             clearInterval(nuclearTimer);
             nuclearTimer = null;
         }
         isAppDeletingText = false; // Clear the flag when deletion stops
-        console.log('*** stopTextDeletion: isAppDeletingText set to false');
+        console.log('*** stopTextDeletion: isAppDeletingText set to false, nuclearTimer cleared');
+        
+        // Extra safety: Force clear the flag after a delay in case of race conditions
+        setTimeout(() => {
+            if (isAppDeletingText) {
+                console.log('*** Safety cleanup: forcing isAppDeletingText to false');
+                isAppDeletingText = false;
+            }
+        }, 1000);
     }
     
     // Stop nuclear consequences (separate from stopConsequences to handle screen color properly)
@@ -1167,17 +1191,22 @@
     function checkForRewards() {
         if (gamificationMode !== 'reward') return;
         
-        const currentWords = currentWordCount;
+        const currentWords = sessionWordCount; // Use session words instead of total document words
         const wordsPerReward = gamificationSettings.rewardWords || 100;
         const rewardsEarned = Math.floor(currentWords / wordsPerReward);
-        const previousRewards = Math.floor(lastWordCountCheck / wordsPerReward);
+        
+        // Track previous session words, not total document words
+        const previousSessionWords = Math.max(0, lastWordCountCheck - initialWordCount);
+        const previousRewards = Math.floor(previousSessionWords / wordsPerReward);
+        
+        console.log(`🔍 Reward check: mode=${gamificationMode}, sessionWords=${currentWords}, wordsPerReward=${wordsPerReward}, rewardsEarned=${rewardsEarned}, previousSessionWords=${previousSessionWords}, previousRewards=${previousRewards}, lastWordCountCheck=${lastWordCountCheck}, initialWordCount=${initialWordCount}`);
         
         if (rewardsEarned > previousRewards) {
-            console.log(`🎉 Reward triggered! Words: ${currentWords}, Milestone: ${rewardsEarned * wordsPerReward}`);
+            console.log(`🎉 Reward triggered! Session words: ${currentWords}, Milestone: ${rewardsEarned * wordsPerReward}`);
             showReward();
         }
         
-        lastWordCountCheck = currentWords;
+        lastWordCountCheck = currentWordCount; // Still track total for comparison
     }
     
     // Hardcore mode prevention
@@ -1398,6 +1427,7 @@
         const text = quill.getText();
         const words = text.trim().split(/\s+/).filter(word => word.length > 0);
         initialWordCount = words.length;
+        lastWordCountCheck = initialWordCount; // Initialize reward tracking from existing word count
         console.log('Starting with existing', initialWordCount, 'words in document');
         
         // Update the word count display to show 0 for session words
@@ -1482,6 +1512,7 @@
     document.addEventListener('keydown', function(e) {
         // Handle hardcore mode restrictions
         if (preventHardcoreActions(e)) {
+            console.log('*** Hardcore mode blocked key:', e.key, 'hardcoreMode:', editorSettings.hardcoreMode, 'sessionMode:', sessionMode);
             return;
         }
         
@@ -1800,6 +1831,7 @@
         // Reset counters for new sprint
         if (sessionMode === 'wordcount') {
             initialWordCount = quill.getText().trim().split(/\s+/).filter(word => word.length > 0).length;
+            lastWordCountCheck = initialWordCount; // Reset reward tracking for new sprint
             sessionWordCount = 0;
             document.getElementById('wordCount').textContent = '0';
         } else if (sessionMode === 'timer') {
