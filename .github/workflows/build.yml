@@ -42,21 +42,21 @@ jobs:
 
     - name: Upload Windows Artifacts
       if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: focus-writer-windows
         path: dist/*.exe
 
     - name: Upload macOS Artifacts
       if: matrix.os == 'macos-latest'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: focus-writer-macos
         path: dist/*.dmg
 
     - name: Upload Linux Artifacts
       if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: focus-writer-linux
         path: dist/*.AppImage
@@ -68,7 +68,7 @@ jobs:
 
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
