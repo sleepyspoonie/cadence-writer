@@ -37,8 +37,10 @@ jobs:
       run: |
         echo "Contents of dist directory:"
         dir dist
-        echo "File sizes:"
-        forfiles /p dist /m *.exe /c "cmd /c echo @path - @fsize bytes"
+        echo "Contents of win-unpacked directory:"
+        dir "dist\win-unpacked"
+        echo "Focus Writer.exe size:"
+        dir "dist\win-unpacked\Focus Writer.exe"
 
     - name: Build macOS
       if: matrix.os == 'macos-latest'
