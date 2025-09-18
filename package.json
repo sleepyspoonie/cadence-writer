@@ -33,6 +33,7 @@
       "!node_modules/**/*",
       "!dist/**/*"
     ],
+    "publish": null,
     "win": {
       "target": "portable",
       "signAndEditExecutable": false,
