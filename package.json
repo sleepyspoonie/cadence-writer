@@ -1,20 +1,49 @@
 {
   "name": "focus-writer",
-  "version": "1.0.0",
+  "version": "1.0.0-beta",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win portable",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux AppImage",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "A focused writing environment",
   "devDependencies": {
-    "electron": "^37.3.1"
+    "electron": "^37.3.1",
+    "electron-builder": "^26.0.12"
   },
   "dependencies": {
     "electron-store": "^10.1.0",
     "quill": "^2.0.3"
+  },
+  "build": {
+    "appId": "com.focuswriter.app",
+    "productName": "Focus Writer",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/**/*",
+      "!dist/**/*"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false,
+      "verifyUpdateCodeSignature": false
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": null
+    },
+    "linux": {
+      "target": "AppImage"
+    }
   }
 }
