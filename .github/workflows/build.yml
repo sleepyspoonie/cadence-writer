@@ -53,7 +53,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: focus-writer-windows
-        path: dist/Focus Writer*.exe
+        path: dist/win-unpacked/
 
     - name: Upload macOS Artifacts
       if: matrix.os == 'macos-latest'
