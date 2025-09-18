@@ -640,9 +640,9 @@
             </div>
         </div>
 
-        <!-- Long-term Goals -->
+        <!-- Daily Writing Goals -->
         <div class="settings-section">
-            <h2>Long-term Goals</h2>
+            <h2>Daily Writing Goals</h2>
             
             <div class="setting-item">
                 <div class="setting-info">
@@ -659,16 +659,76 @@
             
             <div class="setting-item">
                 <div class="setting-info">
-                    <span class="setting-label">Disable Long-Term Goals</span>
-                    <span class="setting-description">Don't ask to set up long-term goals on startup</span>
+                    <span class="setting-label">Daily Goal Type</span>
+                    <span class="setting-description">Choose your goal style or enter freewrite mode</span>
                 </div>
                 <div class="setting-control">
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="disableLongTermGoals">
-                        <span class="toggle-slider"></span>
-                    </label>
+                    <div class="select-wrapper">
+                        <select class="setting-select" id="dailyGoalType">
+                            <option value="disabled">Freewrite (No Goals)</option>
+                            <option value="indefinite">Indefinite Daily Goal</option>
+                            <option value="longterm">Long-term Goal</option>
+                        </select>
+                    </div>
                 </div>
             </div>
+
+            <!-- Indefinite Daily Goal Settings -->
+            <div class="setting-item" id="indefiniteGoalSettings" style="display: none;">
+                <div class="setting-info">
+                    <span class="setting-label">Daily Word Target</span>
+                    <span class="setting-description">Words to write each day</span>
+                </div>
+                <div class="setting-control">
+                    <input type="number" class="number-input" id="dailyWordTarget" value="500" min="50" max="5000" style="width: 120px;">
+                    <span style="color: var(--color-text-muted); margin-left: 0.5rem;">words</span>
+                </div>
+            </div>
+
+            <!-- Long-term Goal Settings -->
+            <div class="setting-item" id="longtermGoalSettings" style="display: none;">
+                <div class="setting-info">
+                    <span class="setting-label">Long-term Goal</span>
+                    <span class="setting-description">Set total words and duration</span>
+                </div>
+                <div class="setting-control">
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <div>
+                            <input type="number" class="number-input" id="longtermTotalWords" value="50000" min="1000" max="1000000" style="width: 100px;">
+                            <span style="color: var(--color-text-muted); font-size: 0.85rem;">words</span>
+                        </div>
+                        <span style="color: var(--color-text-muted);">in</span>
+                        <div>
+                            <input type="number" class="number-input" id="longtermTotalDays" value="30" min="1" max="365" style="width: 80px;">
+                            <span style="color: var(--color-text-muted); font-size: 0.85rem;">days</span>
+                        </div>
+                    </div>
+                    <div style="color: var(--color-text-muted); font-size: 0.85rem; margin-top: 0.5rem;" id="longtermWordsPerDay">
+                        = 1,667 words per day
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streak Preservation Settings -->
+            <div class="setting-item" id="streakPreservationSettings" style="display: none;">
+                <div class="setting-info">
+                    <span class="setting-label">Streak Preservation</span>
+                    <span class="setting-description">What counts for maintaining your writing streak?</span>
+                </div>
+                <div class="setting-control">
+                    <div class="radio-group" style="flex-direction: column; align-items: flex-start; gap: 0.75rem;">
+                        <label style="margin-bottom: 0;">
+                            <input type="radio" name="streakPreservation" value="any" checked>
+                            Any writing preserves streak
+                        </label>
+                        <label style="margin-bottom: 0;">
+                            <input type="radio" name="streakPreservation" value="goal">
+                            Must meet daily goal to preserve streak
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
             
             <div class="setting-item">
                 <div class="setting-info">
@@ -1148,12 +1208,18 @@
     // Function to capture current form state
     function captureCurrentSettings() {
         const currentSettings = {
-            // Files & Storage
-            documentsFolder: document.getElementById('currentPath').textContent,
+            // Files & Storage - only update if it's not the default "Not set" text
+            documentsFolder: document.getElementById('currentPath').textContent === 'Not set' ? 
+                (originalSettings.documentsFolder || document.getElementById('currentPath').textContent) : 
+                document.getElementById('currentPath').textContent,
             
-            // Long-term Goals
+            // Daily Goals
             hideTodayProgress: document.getElementById('hideTodayProgress').checked,
-            disableLongTermGoals: document.getElementById('disableLongTermGoals').checked,
+            dailyGoalType: document.getElementById('dailyGoalType').value,
+            dailyWordTarget: document.getElementById('dailyWordTarget').value,
+            longtermTotalWords: document.getElementById('longtermTotalWords').value,
+            longtermTotalDays: document.getElementById('longtermTotalDays').value,
+            streakPreservation: document.querySelector('input[name="streakPreservation"]:checked')?.value,
             
             // Appearance
             theme: document.querySelector('input[name="theme"]:checked')?.value,
@@ -1178,6 +1244,8 @@
             rewardType: document.querySelector('input[name="rewardType"]:checked')?.value,
             gracePeriod: document.getElementById('gracePeriod').value,
             punishType: document.querySelector('input[name="punishType"]:checked')?.value,
+            nuclearGracePeriod: document.getElementById('nuclearGracePeriod').value,
+            deletionSpeed: document.getElementById('deletionSpeed').value,
             hardcoreMode: document.getElementById('hardcoreMode').checked,
             disableStreak: document.getElementById('disableStreak').checked,
             disableAchievements: document.getElementById('disableAchievements').checked
@@ -1374,6 +1442,7 @@
 
     ipcRenderer.on('folder-selected', (event, folderPath) => {
         document.getElementById('currentPath').textContent = folderPath;
+        checkForChanges(); // Trigger change detection
     });
 
     // Open rewards folder (removed since we no longer have image rewards)
@@ -1382,19 +1451,84 @@
     // });
 
     // Long-term goals interdependency handler
-    document.getElementById('disableLongTermGoals').addEventListener('change', function() {
-        updateTodayProgressState();
-        
-        // If toggling FROM disabled TO enabled, show modal and re-enable prompting
-        if (!this.checked) {
-            ipcRenderer.send('enable-goal-prompting');
-            showModal();
-        }
-    });
+    const disableLongTermGoals = document.getElementById('disableLongTermGoals');
+    if (disableLongTermGoals) {
+        disableLongTermGoals.addEventListener('change', function() {
+            updateTodayProgressState();
+            
+            // If toggling FROM disabled TO enabled, show modal and re-enable prompting
+            if (!this.checked) {
+                ipcRenderer.send('enable-goal-prompting');
+                showModal();
+            }
+        });
+    }
 
-    // Reset goal button handler
+    // Function to update reset button visibility
+    function updateResetButtonVisibility() {
+        try {
+            const resetBtn = document.getElementById('resetGoalBtn');
+            if (!resetBtn) {
+                console.log('Reset button not found');
+                return;
+            }
+            
+            // Find the entire setting-item div (resetBtn -> setting-control -> setting-item)
+            const settingItem = resetBtn.closest('.setting-item');
+            if (!settingItem) {
+                console.log('Setting item container not found');
+                return;
+            }
+            
+            const hasActiveGoal = checkForActiveGoal();
+            console.log('Setting reset goal visibility. Has active goal:', hasActiveGoal);
+            
+            if (hasActiveGoal) {
+                settingItem.style.removeProperty('display');
+                console.log('Reset goal setting should now be visible');
+            } else {
+                settingItem.style.setProperty('display', 'none', 'important');
+                console.log('Reset goal setting should now be hidden');
+            }
+            
+            // Double check the actual computed style
+            const computedStyle = window.getComputedStyle(settingItem);
+            console.log('Setting item computed display style:', computedStyle.display);
+            
+        } catch (error) {
+            console.error('Error in updateResetButtonVisibility:', error);
+        }
+    }
+
+    // Function to check if there's an active goal
+    function checkForActiveGoal() {
+        console.log('CHECKING FOR ACTIVE GOAL');
+        console.log('currentSettings:', currentSettings);
+        
+        // Check old longTermGoals system
+        if (currentSettings.longTermGoals && currentSettings.longTermGoals.enabled) {
+            console.log('Found active longTermGoals');
+            return true;
+        }
+        
+        // Check new dailyGoals system
+        if (currentSettings.dailyGoals && 
+            currentSettings.dailyGoals.type && 
+            currentSettings.dailyGoals.type !== 'disabled') {
+            console.log('Found active dailyGoals type:', currentSettings.dailyGoals.type);
+            return true;
+        }
+        
+        console.log('No active goal found');
+        console.log('dailyGoals type:', currentSettings.dailyGoals ? currentSettings.dailyGoals.type : 'undefined');
+        return false;
+    }
+
+    // Reset goal button handler - button is only visible when there's an active goal
     document.getElementById('resetGoalBtn').addEventListener('click', function() {
-        const confirmed = confirm('Are you sure you want to reset your current long-term goal?\n\nThis will:\n• Delete all progress data for your current goal\n• Remove goal tracking from your homepage\n• Allow you to set up a new goal immediately\n\nThis action cannot be undone.');
+        console.log('Reset goal button clicked');
+        
+        const confirmed = confirm('Are you sure you want to reset your current goal?\n\nThis will:\n• Delete all progress data for your current goal\n• Remove goal tracking from your homepage\n• Allow you to set up a new goal immediately\n\nThis action cannot be undone.');
         
         if (confirmed) {
             ipcRenderer.send('reset-long-term-goal');
@@ -1411,10 +1545,24 @@
                 resetBtn.style.background = '#dc2626';
                 resetBtn.disabled = false;
                 
-                // Show the goal setup modal after reset
-                showModal();
+                // Settings window will remain open - user can close manually or set up new goal from homepage
             }, 2000);
         }
+    });
+
+    // Handle goal reset errors
+    ipcRenderer.on('goal-reset-error', (event, errorMessage) => {
+        console.error('Goal reset failed:', errorMessage);
+        const resetBtn = document.getElementById('resetGoalBtn');
+        resetBtn.textContent = 'Reset Failed!';
+        resetBtn.style.background = '#dc2626';
+        resetBtn.disabled = false;
+        
+        alert('Failed to reset goal: ' + errorMessage);
+        
+        setTimeout(() => {
+            resetBtn.textContent = 'Reset Goal';
+        }, 3000);
     });
 
     // Long-term goals modal event listeners
@@ -1441,7 +1589,6 @@
         updateTodayProgressState();
         
         // Send to backend and auto-save
-        ipcRenderer.send('disable-goal-prompting');
         
         // Auto-save the settings
         const editorSettings = {
@@ -1479,33 +1626,34 @@
             disableAchievements: document.getElementById('disableAchievements').checked
         };
 
-        const longTermGoalsSettings = {
-            disablePrompting: true // Now disabled
-        };
+        const longTermGoalsSettings = null; // Legacy system disabled
         
         ipcRenderer.send('save-all-settings', {
+            documentsFolder: document.getElementById('currentPath').textContent !== 'Not set' ?
+                document.getElementById('currentPath').textContent : undefined,
             editorSettings,
             appearanceSettings,
             gamificationSettings,
-            longTermGoalsSettings
+            dailyGoalsSettings
         });
-        
+
+        // Always notify homepage to refresh when settings are saved
+        ipcRenderer.send('goal-settings-changed');
+
         hideModal();
     });
 
     // Close button handler
     document.getElementById('goalOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'goalOverlay') {
-            ipcRenderer.send('disable-goal-prompting');
-            hideModal();
+                hideModal();
         }
     });
 
     // Overlay click handler
     document.getElementById('goalOverlay').addEventListener('click', (e) => {
         if (e.target.id === 'goalOverlay') {
-            ipcRenderer.send('disable-goal-prompting');
-            hideModal();
+                hideModal();
         }
     });
 
@@ -1519,18 +1667,59 @@
         ipcRenderer.send('get-settings');
     }, 500);
     
+    let currentSettings = {}; // Store current settings to preserve values when saving
+    
     ipcRenderer.on('load-settings', (event, settings) => {
         console.log('Settings loaded:', settings);
         console.log('Loading settings:', settings);
+        currentSettings = settings; // Store current settings
         
         // Set document path
         if (settings.documentsFolder) {
             document.getElementById('currentPath').textContent = settings.documentsFolder;
         }
 
-        // Load long-term goals settings
-        if (settings.longTermGoals) {
-            document.getElementById('disableLongTermGoals').checked = settings.longTermGoals.disablePrompting || false;
+        // Update reset button visibility based on active goals
+        updateResetButtonVisibility();
+        
+        // Load daily goals settings
+        if (settings.dailyGoals) {
+            document.getElementById('dailyGoalType').value = settings.dailyGoals.type || 'disabled';
+            document.getElementById('dailyWordTarget').value = settings.dailyGoals.dailyWordTarget || 500;
+            document.getElementById('longtermTotalWords').value = settings.dailyGoals.longtermTotalWords || 50000;
+            document.getElementById('longtermTotalDays').value = settings.dailyGoals.longtermTotalDays || 30;
+            
+            // Set streak preservation setting
+            const streakPreservation = settings.dailyGoals.streakPreservation || 'any';
+            const streakRadio = document.querySelector(`input[name="streakPreservation"][value="${streakPreservation}"]`);
+            if (streakRadio) {
+                streakRadio.checked = true;
+            }
+            
+            // disablePrompting removed - no longer needed
+            
+            // Update UI based on goal type
+            setTimeout(() => {
+                updateDailyGoalUI();
+            }, 100);
+        } else {
+            // Handle backward compatibility - if user has old longTermGoals, migrate to dailyGoals
+            if (settings.longTermGoals && settings.longTermGoals.enabled) {
+                document.getElementById('dailyGoalType').value = 'longterm';
+                document.getElementById('longtermTotalWords').value = settings.longTermGoals.totalWords || 50000;
+                document.getElementById('longtermTotalDays').value = settings.longTermGoals.totalDays || 30;
+            } else {
+                document.getElementById('dailyGoalType').value = 'disabled';
+            }
+            
+            if (settings.longTermGoals) {
+                // disablePrompting removed - no longer needed
+            }
+            
+            // Update UI
+            setTimeout(() => {
+                updateDailyGoalUI();
+            }, 100);
         }
         
         // Load editor settings if they exist
@@ -1579,8 +1768,8 @@
             
             document.getElementById('rewardWords').value = settings.gamificationSettings.rewardWords || 100;
             document.getElementById('gracePeriod').value = settings.gamificationSettings.gracePeriod || 10;
-            document.getElementById('nuclearGracePeriod').value = settings.gamificationSettings.nuclearGracePeriod || 10;
-            document.getElementById('deletionSpeed').value = settings.gamificationSettings.deletionSpeed || 5;
+            document.getElementById('nuclearGracePeriod').value = settings.gamificationSettings.nuclearGracePeriod !== undefined ? settings.gamificationSettings.nuclearGracePeriod : 10;
+            document.getElementById('deletionSpeed').value = settings.gamificationSettings.deletionSpeed !== undefined ? settings.gamificationSettings.deletionSpeed : 5;
             
             // Reward type removed since we simplified reward mode
             // if (settings.gamificationSettings.rewardType) {
@@ -1615,8 +1804,15 @@
         }, 600);
     });
 
+    console.log('Script is running, looking for save button...');
+    
     // Save settings
-    document.getElementById('saveSettings').addEventListener('click', () => {
+    const saveButton = document.getElementById('saveSettings');
+    console.log('Save button found:', saveButton);
+    if (saveButton) {
+        saveButton.addEventListener('click', () => {
+        console.log('Save button clicked!');
+        try {
         const editorSettings = {
             fontSize: parseInt(document.getElementById('fontSize').value),
             fontFamily: document.getElementById('fontFamily').value,
@@ -1652,18 +1848,37 @@
             disableAchievements: document.getElementById('disableAchievements').checked
         };
 
-        const longTermGoalsSettings = {
-            disablePrompting: document.getElementById('disableLongTermGoals').checked
+        const goalType = document.getElementById('dailyGoalType').value;
+        const isNewLongtermGoal = goalType === 'longterm' &&
+            (currentSettings.dailyGoals?.type !== 'longterm' ||
+             !currentSettings.dailyGoals?.longtermStartDate);
+
+        const dailyGoalsSettings = {
+            type: goalType,
+            dailyWordTarget: parseInt(document.getElementById('dailyWordTarget').value) || 500,
+            longtermTotalWords: parseInt(document.getElementById('longtermTotalWords').value) || 50000,
+            longtermTotalDays: parseInt(document.getElementById('longtermTotalDays').value) || 30,
+            streakPreservation: document.querySelector('input[name="streakPreservation"]:checked')?.value || 'any',
+            // Set new start date for new long-term goals, preserve for existing goals
+            longtermStartDate: isNewLongtermGoal ? new Date().toISOString() : currentSettings.dailyGoals?.longtermStartDate,
+            completed: isNewLongtermGoal ? false : currentSettings.dailyGoals?.completed,
+            completedDate: isNewLongtermGoal ? null : currentSettings.dailyGoals?.completedDate
         };
         
         console.log('Saving theme:', appearanceSettings.theme);
         
         ipcRenderer.send('save-all-settings', {
+            documentsFolder: document.getElementById('currentPath').textContent !== 'Not set' ? 
+                document.getElementById('currentPath').textContent : undefined,
             editorSettings,
             appearanceSettings,
             gamificationSettings,
-            longTermGoalsSettings
+            dailyGoalsSettings
         });
+        
+        // Update current settings and reset button visibility after saving
+        currentSettings.dailyGoals = dailyGoalsSettings;
+        updateResetButtonVisibility();
         
         // Show save message
         const saveMessage = document.getElementById('saveMessage');
@@ -1672,9 +1887,16 @@
             saveMessage.classList.remove('show');
         }, 3000);
         
-        // Mark as saved (hide sticky button)
+        // Mark settings as saved to reset change detection
         markSettingsAsSaved();
-    });
+        console.log('Save completed successfully!');
+        } catch (error) {
+            console.error('Error saving settings:', error);
+        }
+        });
+    } else {
+        console.error('Save button not found!');
+    }
 
     // Fullscreen toggle
     document.getElementById('fullscreenToggle').addEventListener('click', () => {
@@ -1817,6 +2039,69 @@
 
     // Show focus mode config by default
     document.getElementById('focusConfig').classList.add('active');
+    
+    // Daily goal type handler
+    function updateDailyGoalUI() {
+        const goalType = document.getElementById('dailyGoalType').value;
+        const indefiniteSettings = document.getElementById('indefiniteGoalSettings');
+        const longtermSettings = document.getElementById('longtermGoalSettings');
+        const streakSettings = document.getElementById('streakPreservationSettings');
+        
+        console.log('Updating daily goal UI for type:', goalType);
+        
+        // Hide all settings first
+        indefiniteSettings.style.display = 'none';
+        longtermSettings.style.display = 'none';
+        streakSettings.style.display = 'none';
+        
+        if (goalType === 'indefinite') {
+            console.log('Showing indefinite goal settings');
+            indefiniteSettings.style.display = 'flex';
+            streakSettings.style.display = 'flex';
+        } else if (goalType === 'longterm') {
+            console.log('Showing longterm goal settings');
+            longtermSettings.style.display = 'flex';
+            streakSettings.style.display = 'flex';
+            updateLongtermWordsPerDay();
+            
+            // Ensure the text boxes are not disabled
+            const wordsInput = document.getElementById('longtermTotalWords');
+            const daysInput = document.getElementById('longtermTotalDays');
+            if (wordsInput) {
+                wordsInput.disabled = false;
+                wordsInput.readOnly = false;
+            }
+            if (daysInput) {
+                daysInput.disabled = false;
+                daysInput.readOnly = false;
+            }
+            console.log('Longterm text boxes enabled', {
+                wordsDisabled: wordsInput?.disabled,
+                wordsReadOnly: wordsInput?.readOnly,
+                daysDisabled: daysInput?.disabled,
+                daysReadOnly: daysInput?.readOnly
+            });
+        }
+        // For 'disabled' (freewrite), all settings remain hidden
+        
+        // Update the currentSettings to reflect the UI change and update reset button visibility
+        if (currentSettings.dailyGoals) {
+            currentSettings.dailyGoals.type = goalType;
+        }
+        updateResetButtonVisibility();
+    }
+    
+    function updateLongtermWordsPerDay() {
+        const totalWords = parseInt(document.getElementById('longtermTotalWords').value) || 50000;
+        const totalDays = parseInt(document.getElementById('longtermTotalDays').value) || 30;
+        const wordsPerDay = Math.ceil(totalWords / totalDays);
+        document.getElementById('longtermWordsPerDay').textContent = `= ${wordsPerDay.toLocaleString()} words per day`;
+    }
+    
+    // Add event listeners for daily goal type
+    document.getElementById('dailyGoalType').addEventListener('change', updateDailyGoalUI);
+    document.getElementById('longtermTotalWords').addEventListener('input', updateLongtermWordsPerDay);
+    document.getElementById('longtermTotalDays').addEventListener('input', updateLongtermWordsPerDay);
     
     // Add change tracking to all form elements
     function addChangeTracking() {

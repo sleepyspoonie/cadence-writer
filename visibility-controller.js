@@ -48,10 +48,11 @@ if (!window.visibilityControllerLoaded) {
             
             // Hide Today's Progress with new logic (only on homepage)
             if (this.isHomepage()) {
-                const shouldHideProgress = this.shouldHideTodayProgress(appearanceSettings, this.settings.longTermGoals);
+                const shouldHideProgress = this.shouldHideTodayProgress(appearanceSettings, this.settings.dailyGoals);
                 console.log('Today progress visibility check:', {
                     manualHide: appearanceSettings?.hideTodayProgress,
-                    hasActiveGoal: this.settings.longTermGoals?.enabled && !this.settings.longTermGoals?.completed,
+                    dailyGoalsType: this.settings.dailyGoals?.type,
+                    hasActiveGoal: this.settings.dailyGoals && this.settings.dailyGoals.type !== 'disabled',
                     shouldHide: shouldHideProgress
                 });
                 
@@ -110,18 +111,15 @@ if (!window.visibilityControllerLoaded) {
             }
         }
         
-        shouldHideTodayProgress(appearanceSettings, longTermGoals) {
+        shouldHideTodayProgress(appearanceSettings, dailyGoals) {
             // If user manually set "Always Hide Today's Progress", respect that choice
             if (appearanceSettings && appearanceSettings.hideTodayProgress === true) {
                 return true;
             }
             
-            // Auto-hide if no active long-term goal
-            // Consider goal inactive if prompting is disabled OR goal is not enabled OR goal is completed
-            const hasActiveGoal = longTermGoals && 
-                                  longTermGoals.enabled && 
-                                  !longTermGoals.completed && 
-                                  !longTermGoals.disablePrompting;  // Add this condition
+            // Auto-hide if no active daily goal
+            // Show progress for indefinite and longterm goals (not disabled/freewrite)
+            const hasActiveGoal = dailyGoals && dailyGoals.type !== 'disabled';
             
             if (!hasActiveGoal) {
                 return true;  // Hide by default when no active goal

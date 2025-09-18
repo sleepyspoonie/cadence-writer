@@ -154,15 +154,17 @@ class AchievementNotifications {
         document.body.appendChild(this.container);
     }
 
-    showNotification(achievement) {
+    showNotification(achievement, playSound = true) {
         const id = this.nextId++;
         const notification = this.createNotificationElement(achievement, id);
         
         this.container.appendChild(notification);
         this.notifications.push({ id, element: notification });
         
-        // Play sound
-        this.playAchievementSound();
+        // Play sound only if requested
+        if (playSound) {
+            this.playAchievementSound();
+        }
         
         // Animate in
         requestAnimationFrame(() => {

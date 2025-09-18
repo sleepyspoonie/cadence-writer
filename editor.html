@@ -135,7 +135,7 @@
             justify-content: center;
             align-items: flex-start;
             padding: 3rem 2rem;
-            overflow-y: auto;
+            overflow-y: visible;
             background: linear-gradient(180deg, var(--color-bg-primary) 0%, var(--color-bg-secondary) 100%);
             width: 100%;
         }
@@ -150,7 +150,7 @@
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            max-height: calc(100vh - 200px);
+            height: calc(100vh - 200px);
         }
         
         /* Quill editor container */
@@ -177,22 +177,27 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
         }
         
-        /* Quill container */
+        /* Quill container - FORCE SCROLLING */
         .ql-container {
-            flex: 1;
-            overflow-y: auto;
+            flex: 1 !important;
+            overflow-y: scroll !important;
+            overflow-x: hidden !important;
             border: none !important;
             font-family: 'Georgia', 'Charter', 'Times New Roman', serif !important;
             background: var(--editor-bg);
+            max-height: 100% !important;
         }
         
-        /* Quill editor content area */
+        /* Quill editor content area - ALLOW NATURAL HEIGHT */
         .ql-editor {
-            min-height: calc(100vh - 280px);
             padding: 3rem !important;
             line-height: 1.8 !important;
             color: var(--editor-text) !important;
             background: var(--editor-bg);
+            height: auto !important;
+            min-height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
         }
 
         .ql-editor h1, .ql-editor h2, .ql-editor h3 {
@@ -563,6 +568,34 @@
             ]
         }
     });
+    
+    // Force scrolling behavior after Quill is ready
+    setTimeout(() => {
+        const container = document.querySelector('.ql-container');
+        const editor = document.querySelector('.ql-editor');
+        
+        if (container && editor) {
+            console.log('Forcing scroll behavior on Quill elements');
+            
+            // Force container to be scrollable
+            container.style.setProperty('overflow-y', 'scroll', 'important');
+            container.style.setProperty('overflow-x', 'hidden', 'important');
+            container.style.setProperty('height', '100%', 'important');
+            container.style.setProperty('max-height', 'calc(100vh - 250px)', 'important');
+            
+            // Force editor content to grow naturally
+            editor.style.setProperty('height', 'auto', 'important');
+            editor.style.setProperty('min-height', 'auto', 'important');
+            editor.style.setProperty('max-height', 'none', 'important');
+            editor.style.setProperty('overflow', 'visible', 'important');
+            
+            console.log('Applied scroll styles:', {
+                containerHeight: container.style.height,
+                containerOverflow: container.style.overflowY,
+                editorHeight: editor.style.height
+            });
+        }
+    }, 500);
     
     // Session variables
     let sessionMode = 'timer';
@@ -960,7 +993,7 @@
         const intervalTime = 1000 / deletionSpeed; // Characters per second converted to interval
         
         isAppDeletingText = true; // Mark that app is deleting text
-        console.log('*** startTextDeletion: isAppDeletingText set to true');
+        console.log('*** startTextDeletion: isAppDeletingText set to true, deletionSpeed:', deletionSpeed, 'intervalTime:', intervalTime);
         
         nuclearTimer = setInterval(() => {
             const text = quill.getText();
@@ -1110,32 +1143,23 @@
         // Text deletion is now stopped directly in keyboard event handlers
         
         if (gamificationMode === 'punishment' || gamificationMode === 'nuclear') {
-            const userGracePeriod = (gamificationMode === 'nuclear' ? 
+            const gracePeriod = (gamificationMode === 'nuclear' ? 
                 gamificationSettings.nuclearGracePeriod : 
-                gamificationSettings.gracePeriod) || 10;
-            const builtInGracePeriod = 10; // 10-second built-in grace period
+                gamificationSettings.gracePeriod);
+            // Built-in 10-second grace period PLUS user's configured grace period
+            const builtInGracePeriod = 10; // Always 10 seconds built-in safety
+            const userGracePeriod = gracePeriod !== undefined ? gracePeriod : 0;
             const totalTime = builtInGracePeriod + userGracePeriod;
             const container = document.querySelector('.editor-container');
             
-            console.log(`Resetting ${gamificationMode} timer: ${builtInGracePeriod}s built-in + ${userGracePeriod}s user grace = ${totalTime}s total`);
+            console.log(`Resetting ${gamificationMode} timer: ${totalTime}s total (${builtInGracePeriod}s built-in + ${userGracePeriod}s user setting)`);
             
-            // Set the user grace period as a CSS variable for the transition
-            container.style.setProperty('--user-grace-period', userGracePeriod + 's');
+            // Set the grace period as a CSS variable for the transition
+            container.style.setProperty('--user-grace-period', totalTime + 's');
             
-            // After built-in grace period, start the red transition
-            warningTimer = setTimeout(() => {
-                console.log(`Starting red transition over ${userGracePeriod} seconds`);
-                container.classList.add('punishment-warning');
-                
-                // Trigger the transition to red after a small delay
-                setTimeout(() => {
-                    container.classList.add('transitioning');
-                }, 50);
-            }, builtInGracePeriod * 1000);
-            
-            // Start consequences after total time
+            // Start consequences after grace period
             inactivityTimer = setTimeout(() => {
-                console.log(`${gamificationMode} consequences triggered after ${totalTime} seconds of inactivity`);
+                console.log(`${gamificationMode} consequences triggered after ${totalTime}s grace period`);
                 container.classList.remove('punishment-warning', 'transitioning');
                 
                 // Clear any lingering transition styles that might interfere with nuclear mode
@@ -1156,31 +1180,22 @@
         const container = document.querySelector('.editor-container');
         
         if (gamificationMode === 'punishment' || gamificationMode === 'nuclear') {
-            const userGracePeriod = (gamificationMode === 'nuclear' ? 
+            const gracePeriod = (gamificationMode === 'nuclear' ? 
                 gamificationSettings.nuclearGracePeriod : 
-                gamificationSettings.gracePeriod) || 10;
-            const builtInGracePeriod = 10; // 10-second built-in grace period
+                gamificationSettings.gracePeriod);
+            // Built-in 10-second grace period PLUS user's configured grace period
+            const builtInGracePeriod = 10; // Always 10 seconds built-in safety
+            const userGracePeriod = gracePeriod !== undefined ? gracePeriod : 0;
             const totalTime = builtInGracePeriod + userGracePeriod;
             
-            console.log(`Starting immediate ${gamificationMode} timer: ${builtInGracePeriod}s built-in + ${userGracePeriod}s user grace = ${totalTime}s total`);
+            console.log(`Starting immediate ${gamificationMode} timer: ${totalTime}s total (${builtInGracePeriod}s built-in + ${userGracePeriod}s user setting)`);
             
-            // Set the user grace period as a CSS variable for the transition
-            container.style.setProperty('--user-grace-period', userGracePeriod + 's');
+            // Set the grace period as a CSS variable for the transition
+            container.style.setProperty('--user-grace-period', totalTime + 's');
             
-            // After built-in grace period, start the red transition
-            warningTimer = setTimeout(() => {
-                console.log(`Starting red transition over ${userGracePeriod} seconds`);
-                container.classList.add('punishment-warning');
-                
-                // Trigger the transition to red after a small delay
-                setTimeout(() => {
-                    container.classList.add('transitioning');
-                }, 50);
-            }, builtInGracePeriod * 1000);
-            
-            // Start consequences after total time (built-in + user grace period)
+            // Start consequences immediately after grace period
             inactivityTimer = setTimeout(() => {
-                console.log(`${gamificationMode} consequences triggered after ${totalTime} seconds`);
+                console.log(`${gamificationMode} consequences triggered after ${totalTime}s grace period`);
                 container.classList.remove('punishment-warning', 'transitioning');
                 startConsequences();
             }, totalTime * 1000);
@@ -1422,6 +1437,14 @@
         setTimeout(() => {
         quill.setContents(fileInfo.content);
         quill.focus(); // Re-focus the editor after loading content
+
+        // Debug editor state
+        console.log('Editor debugging:', {
+            isEnabled: quill.isEnabled(),
+            hasFocus: quill.hasFocus(),
+            editorElement: document.querySelector('.ql-editor'),
+            containerElement: document.querySelector('#editor')
+        });
         
         // Calculate initial word count AFTER content is loaded
         const text = quill.getText();
@@ -1432,12 +1455,18 @@
         
         // Update the word count display to show 0 for session words
         document.getElementById('wordCount').textContent = '0';
+        
+        // Send session-started with the correct initial word count
+        ipcRenderer.send('session-started', { 
+            initialWords: initialWordCount 
+        });
         }, 100);
+    } else {
+        // For new documents, send session-started immediately with 0 words
+        ipcRenderer.send('session-started', { 
+            initialWords: 0 
+        });
     }
-    
-    ipcRenderer.send('session-started', { 
-        initialWords: initialWordCount 
-    });
     
     setTimeout(() => {
         sessionStarted = true;
@@ -1927,8 +1956,18 @@
     });
     observer.observe(container, { attributes: true, attributeFilter: ['class'] });
     
-    // Focus the editor
-    quill.focus();
+    // Focus the editor with robust timing
+    // Simple focus function - only focus the editor, don't click or do other aggressive things
+    function ensureEditorFocus() {
+        if (quill && quill.focus) {
+            quill.focus();
+        }
+    }
+    
+    // Only focus when the window gains focus (not on every click or IPC message)
+    window.addEventListener('focus', () => {
+        setTimeout(ensureEditorFocus, 100);
+    });
 </script>
 <script src="achievement-notifications.js"></script>
 <script src="visibility-controller.js"></script>

@@ -384,6 +384,8 @@ h1 {
 .achievement-icon {
     font-size: 2rem;
     margin-bottom: 0.5rem;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .achievement h4, .achievement-item h4 {
@@ -802,6 +804,7 @@ h1 {
     let currentCalendarDate = new Date();
     let writingDays = {};
     let firstDataDate = null;
+    let userSettings = null;
     
     // Wait for DOM to be ready
     console.log('Statistics page script loading...');
@@ -811,6 +814,9 @@ h1 {
         // Check if achievements are disabled and hide the section if so
         ipcRenderer.send('get-settings');
         ipcRenderer.on('load-settings', (event, settings) => {
+            console.log('Settings loaded in statistics page:', settings);
+            userSettings = settings; // Store settings globally
+            
             if (settings?.gamificationSettings?.disableAchievements) {
                 // Hide the achievements section
                 const achievementsSection = document.getElementById('achievementsSection');
@@ -823,6 +829,12 @@ h1 {
                 const achievementsOverlay = document.getElementById('achievementsOverlay');
                 if (achievementsModal) achievementsModal.style.display = 'none';
                 if (achievementsOverlay) achievementsOverlay.style.display = 'none';
+            }
+            
+            // If we already have daily data, rebuild the writing days with goal-based logic
+            if (currentDailyData.length > 0) {
+                buildWritingDaysMap(currentDailyData, settings);
+                renderCalendar(); // Re-render calendar with updated writing days
             }
         });
         
@@ -1177,6 +1189,63 @@ h1 {
     });
 }
     
+    // Function to build writing days map with goal-based logic
+    function buildWritingDaysMap(dailyData, settings) {
+        console.log('Building writing days map with goal-based logic');
+        
+        // Reset writing days and first date
+        writingDays = {};
+        firstDataDate = null;
+        
+        if (!dailyData || !Array.isArray(dailyData)) {
+            console.log('No daily data available');
+            return;
+        }
+        
+        // Get daily goal settings
+        const dailyGoals = settings?.dailyGoals || {};
+        const streakPreservation = dailyGoals.streakPreservation || 'any';
+        
+        // Calculate daily word target based on goal type
+        let dailyWordTarget = 500; // Default
+        if (dailyGoals.type === 'indefinite') {
+            dailyWordTarget = dailyGoals.dailyWordTarget || 500;
+        } else if (dailyGoals.type === 'longterm') {
+            dailyWordTarget = Math.ceil(dailyGoals.longtermTotalWords / dailyGoals.longtermTotalDays);
+        }
+        
+        console.log('Calendar streak settings:', {
+            streakPreservation,
+            dailyWordTarget,
+            goalType: dailyGoals.type
+        });
+        
+        // Function to check if a day qualifies for calendar checkmark
+        function dayQualifiesForCalendar(dayStats) {
+            if (!dayStats || dayStats.words === 0) return false;
+            
+            if (streakPreservation === 'goal') {
+                // Must meet daily goal to show checkmark
+                return dayStats.words >= dailyWordTarget;
+            } else {
+                // Any writing gets checkmark
+                return dayStats.words > 0;
+            }
+        }
+        
+        // Build the writing days map
+        dailyData.forEach(day => {
+            if (dayQualifiesForCalendar(day)) {
+                writingDays[day.date] = true;
+                if (!firstDataDate || new Date(day.date) < new Date(firstDataDate)) {
+                    firstDataDate = day.date;
+                }
+            }
+        });
+        
+        console.log('Writing days built:', Object.keys(writingDays).length, 'qualifying days');
+    }
+    
     // Calendar render function
     function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
@@ -1263,16 +1332,8 @@ h1 {
         // Store data
         currentDailyData = data.dailyData || [];
         
-        // Build writing days map
-        writingDays = {};
-        data.dailyData.forEach(day => {
-            if (day.words > 0) {
-                writingDays[day.date] = true;
-                if (!firstDataDate || new Date(day.date) < new Date(firstDataDate)) {
-                    firstDataDate = day.date;
-                }
-            }
-        });
+        // Build writing days map with goal-based logic
+        buildWritingDaysMap(data.dailyData, userSettings);
         
         // Update summary cards in new order
         try {

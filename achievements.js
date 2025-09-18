@@ -363,13 +363,13 @@ class AchievementSystem {
             earlyBird: {
                 id: 'earlyBird',
                 name: 'Early Bird',
-                description: 'Write before 8am',
+                description: 'Write between 4am and 8am',
                 icon: '🌅',
                 hidden: false,
                 condition: (stats, session) => {
                     if (!session || !session.sessionStartTime) return false;
                     const hour = new Date(session.sessionStartTime).getHours();
-                    return hour < 8;
+                    return hour >= 4 && hour < 8;
                 }
             },
             

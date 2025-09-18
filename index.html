@@ -30,6 +30,7 @@
             </div>
             <div class="progress-info">
                 <span class="progress-text" id="todayProgress">0 / 1000 words</span>
+                <div id="todayWordsDisplay" style="display: none; font-size: 0.9em; color: var(--color-text-muted); margin-top: 4px;"></div>
                 <span class="progress-meta" id="goalMeta" style="display: none;"></span>
             </div>
         </div>
@@ -206,27 +207,6 @@
   </div>
 </div>
 
-<!-- Goal Preference Modal -->
-<div class="tutorial-overlay" id="goalPreferenceOverlay" style="display: none;">
-  <div class="tutorial-modal goal-preference">
-    <div class="preference-icon">🎯</div>
-    <h2>Would you like to set a daily writing goal?</h2>
-    <p class="preference-subtitle">Goals help track your progress and build writing habits</p>
-    
-    <div class="preference-buttons">
-      <button class="tutorial-btn secondary" id="goalLaterBtn">
-        <span class="btn-icon">⏰</span>
-        Maybe Later
-      </button>
-      <button class="tutorial-btn primary" id="goalNowBtn">
-        <span class="btn-icon">✓</span>
-        Yes, Let's Set One
-      </button>
-    </div>
-    
-    <p class="preference-note">Don't worry - you can always change this in Settings</p>
-  </div>
-</div>
 
 <!-- Tutorial Complete Modal -->
 <div class="tutorial-overlay" id="tutorialCompleteOverlay" style="display: none;">
@@ -259,14 +239,52 @@
   </div>
 </div>
 
-<!-- Long-term Goal Setup Modal -->
+<!-- Daily Goal Setup Modal -->
 <div class="goal-overlay" id="goalOverlay" style="display: none;">
   <div class="goal-modal">
     <button class="modal-close" id="modalClose">×</button>
-    <h2>Set a Long-Term Writing Goal?</h2>
-    <p>Track your progress towards a larger writing project!</p>
+    <h2>Set Up Daily Writing Goals?</h2>
+    <p>Choose how you'd like to track your writing progress!</p>
     
-    <div class="goal-inputs">
+    <div class="goal-type-selector">
+      <div class="goal-type-option">
+        <input type="radio" name="modalGoalType" id="modalFreewrite" value="freewrite">
+        <label for="modalFreewrite" class="goal-type-card">
+          <div class="goal-type-icon">✍️</div>
+          <h3>Freewrite</h3>
+          <p>Write freely without daily goals or targets</p>
+        </label>
+      </div>
+      
+      <div class="goal-type-option">
+        <input type="radio" name="modalGoalType" id="modalIndefinite" value="indefinite">
+        <label for="modalIndefinite" class="goal-type-card">
+          <div class="goal-type-icon">♾️</div>
+          <h3>Indefinite Daily Goal</h3>
+          <p>Set a daily word target that continues indefinitely</p>
+        </label>
+      </div>
+      
+      <div class="goal-type-option">
+        <input type="radio" name="modalGoalType" id="modalLongTerm" value="longterm">
+        <label for="modalLongTerm" class="goal-type-card">
+          <div class="goal-type-icon">🎯</div>
+          <h3>Long-term Goal</h3>
+          <p>Set a total word target and deadline</p>
+        </label>
+      </div>
+    </div>
+    
+    <!-- Indefinite Goal Settings -->
+    <div class="goal-inputs" id="modalIndefiniteInputs" style="display: none;">
+      <div class="input-group">
+        <label>Daily word target:</label>
+        <input type="number" id="modalDailyTarget" value="500" min="50" max="5000">
+      </div>
+    </div>
+    
+    <!-- Long-term Goal Settings -->
+    <div class="goal-inputs" id="modalLongTermInputs" style="display: none;">
       <div class="inputs-row">
         <div class="input-group">
           <label>Total words:</label>
@@ -282,13 +300,28 @@
       </div>
     </div>
     
+    <!-- Streak Preservation Setting -->
+    <div class="streak-setting" id="modalStreakSetting" style="display: none;">
+      <h4>Streak Preservation</h4>
+      <div class="streak-options">
+        <label>
+          <input type="radio" name="modalStreakPreservation" value="any" checked>
+          Any writing preserves streak
+        </label>
+        <label>
+          <input type="radio" name="modalStreakPreservation" value="goal">
+          Must meet daily goal to preserve streak
+        </label>
+      </div>
+    </div>
+    
     <div class="goal-buttons">
-      <button class="goal-btn primary" id="startGoalBtn">Start my goal!</button>
+      <button class="goal-btn primary" id="startGoalBtn" disabled>Start my goal!</button>
       <button class="goal-btn tertiary" id="disableGoalBtn">Not now</button>
     </div>
     
     <p style="color: var(--color-text-muted); font-size: 0.8rem; margin-top: 1rem; margin-bottom: 0;">
-      Note: Long-term goal tracking can be re-enabled anytime in Settings
+      Note: Daily goal settings can be changed anytime in Settings
     </p>
   </div>
 </div>
@@ -303,7 +336,7 @@
       
       <div class="goal-buttons">
         <button class="goal-btn primary" id="newGoalBtn">Start New Goal</button>
-        <button class="goal-btn secondary" id="freewriteBtn">Continue Freewriting</button>
+        <button class="goal-btn secondary" id="freewriteBtn">Freewrite</button>
       </div>
     </div>
   </div>
@@ -371,10 +404,17 @@
     let spotlightElement = null;
     
     function showWelcome() {
+      console.log('✓ showWelcome() called - setting up welcome modal');
       const overlay = document.getElementById('welcomeOverlay');
-      overlay.style.display = 'flex';
-      overlay.style.opacity = '0';
-      
+      if (overlay) {
+        overlay.style.display = 'flex';
+        overlay.style.opacity = '0';
+        console.log('✓ Welcome overlay found and display set to flex');
+      } else {
+        console.error('✗ Welcome overlay element not found!');
+        return;
+      }
+
       setTimeout(() => {
         overlay.style.opacity = '1';
       }, 150);
@@ -604,7 +644,7 @@
       } else {
         // Tour complete
         hideSpotlight();
-        showGoalPreference();
+        showTutorialComplete();
       }
     }
     
@@ -632,24 +672,6 @@
       }
     }
     
-    function showGoalPreference() {
-      const overlay = document.getElementById('goalPreferenceOverlay');
-      overlay.style.display = 'flex';
-      overlay.style.opacity = '0';
-      
-      setTimeout(() => {
-        overlay.style.opacity = '1';
-      }, 150);
-    }
-    
-    function hideGoalPreference() {
-      const overlay = document.getElementById('goalPreferenceOverlay');
-      overlay.style.opacity = '0';
-      
-      setTimeout(() => {
-        overlay.style.display = 'none';
-      }, 300);
-    }
     
     function showTutorialComplete() {
       const overlay = document.getElementById('tutorialCompleteOverlay');
@@ -673,20 +695,51 @@
     }
     
     function checkFirstTime() {
+      console.log('checkFirstTime() called - sending check-first-time to main process');
       ipcRenderer.send('check-first-time');
     }
     
     // Celebration modal functions (global scope)
-    function showCelebrationModal() {
-        console.log('showCelebrationModal called');
+    function showCelebrationModal(completionInfo = null) {
+        console.log('showCelebrationModal called', completionInfo);
         const overlay = document.getElementById('celebrationOverlay');
+        const messageElement = document.getElementById('celebrationMessage');
+
         if (!overlay) {
             console.error('celebrationOverlay element not found!');
             return;
         }
+
+        // Customize the message based on completion info
+        if (completionInfo && completionInfo.completedEarly && completionInfo.daysAhead > 0) {
+            const daysWord = completionInfo.daysAhead === 1 ? 'day' : 'days';
+            messageElement.innerHTML = `
+                <div style="font-size: 1.2em; margin-bottom: 12px;">
+                    🎉 Incredible! You've completed your ${completionInfo.totalWords.toLocaleString()}-word goal!
+                </div>
+                <div style="font-size: 1em; color: var(--color-accent); font-weight: bold;">
+                    You finished ${completionInfo.daysAhead} ${daysWord} ahead of schedule!
+                </div>
+                <div style="font-size: 0.9em; margin-top: 8px; color: var(--color-text-muted);">
+                    Completed in ${completionInfo.daysTaken} days instead of ${completionInfo.totalDays}
+                </div>
+            `;
+        } else if (completionInfo) {
+            messageElement.innerHTML = `
+                <div style="font-size: 1.2em; margin-bottom: 12px;">
+                    🎉 Congratulations! You've completed your ${completionInfo.totalWords.toLocaleString()}-word goal!
+                </div>
+                <div style="font-size: 0.9em; color: var(--color-text-muted);">
+                    ${completionInfo.wordsWritten.toLocaleString()} words written in ${completionInfo.daysTaken} days
+                </div>
+            `;
+        } else {
+            messageElement.textContent = "You've completed your writing goal!";
+        }
+
         overlay.style.display = 'flex';
         overlay.style.opacity = '0';
-        
+
         setTimeout(() => {
             overlay.style.opacity = '1';
         }, 150);
@@ -706,7 +759,7 @@
     // Debug: Add window function to manually trigger celebration
     window.debugShowCelebration = function() {
         console.log('Manually triggering celebration modal');
-        showCelebrationModal();
+        showCelebrationModal(null);
     };
     
     // Request settings on load
@@ -725,15 +778,36 @@
     }
 
     function showModal() {
-        const overlay = document.getElementById('goalOverlay');
-        overlay.style.display = 'flex';
-        overlay.style.opacity = '0';
-        overlay.querySelector('.goal-modal').style.transform = 'scale(0.7) translateY(-50px)';
-    
-        setTimeout(() => {
-            overlay.style.opacity = '1';
-            overlay.querySelector('.goal-modal').style.transform = 'scale(1) translateY(0)';
-        }, 150); // Increased from 10ms to 150ms for longer delay
+        try {
+            const overlay = document.getElementById('goalOverlay');
+            
+            if (!overlay) {
+                console.error('goalOverlay element not found!');
+                return;
+            }
+            
+            overlay.style.display = 'flex';
+            overlay.style.opacity = '0';
+            
+            const modalElement = overlay.querySelector('.goal-modal');
+            
+            if (modalElement) {
+                modalElement.style.transform = 'scale(0.7) translateY(-50px)';
+            }
+        
+            setTimeout(() => {
+                try {
+                    overlay.style.opacity = '1';
+                    if (modalElement) {
+                        modalElement.style.transform = 'scale(1) translateY(0)';
+                    }
+                } catch (animError) {
+                    console.error('Error in modal animation:', animError);
+                }
+            }, 150);
+        } catch (error) {
+            console.error('Error in showModal():', error);
+        }
     }
 
     function hideModal() {
@@ -747,11 +821,17 @@
     }
 
     ipcRenderer.on('show-goal-setup', () => {
-        showModal();
+        try {
+            console.log('Received show-goal-setup event');
+            showModal();
+        } catch (error) {
+            console.error('Error showing goal setup modal:', error);
+        }
     });
     
     // New Tutorial IPC Event Listeners
     ipcRenderer.on('show-welcome', () => {
+        console.log('✓ RECEIVED show-welcome event - calling showWelcome()');
         showWelcome();
     });
     
@@ -765,14 +845,46 @@
     const originalDisableGoal = document.getElementById('disableGoalBtn');
     const originalCloseModal = document.getElementById('modalClose');
     
-    // Handle tutorial achievement unlock
-    ipcRenderer.on('achievements-unlocked', (event, achievements) => {
-        console.log('Tutorial achievements unlocked:', achievements);
-        // The achievement notification system will handle showing these
-        if (window.achievementNotifier) {
-            achievements.forEach(achievement => {
-                window.achievementNotifier.showAchievement(achievement);
-            });
+    // Achievement unlocks are handled by achievement-notifications.js system
+
+    // Handle queued achievements from completed writing sessions
+    ipcRenderer.on('queued-achievements', (event, achievements) => {
+        console.log('Queued achievements received:', achievements);
+        console.log('Achievement notifier available:', !!window.achievementNotifications);
+        
+        if (achievements.length > 0) {
+            if (window.achievementNotifications) {
+                console.log('Displaying', achievements.length, 'queued achievements');
+                // Show queued achievements with a small delay between each
+                achievements.forEach((achievement, index) => {
+                    setTimeout(() => {
+                        console.log('Showing queued achievement:', achievement.title);
+                        // Only play sound for the first achievement to avoid overlapping chimes
+                        const playSound = index === 0;
+                        window.achievementNotifications.showNotification(achievement, playSound);
+                    }, index * 800); // 800ms delay between each achievement
+                });
+            } else {
+                console.warn('Achievement notifier not available, cannot show achievements');
+                // Try again after a short delay in case the script is still loading
+                setTimeout(() => {
+                    if (window.achievementNotifications) {
+                        console.log('Achievement notifier now available, showing achievements');
+                        achievements.forEach((achievement, index) => {
+                            setTimeout(() => {
+                                console.log('Showing queued achievement:', achievement.title);
+                                // Only play sound for the first achievement to avoid overlapping chimes
+                                const playSound = index === 0;
+                                window.achievementNotifications.showNotification(achievement, playSound);
+                            }, index * 800);
+                        });
+                    } else {
+                        console.error('Achievement notifier still not available after delay');
+                    }
+                }, 1000);
+            }
+        } else {
+            console.log('No queued achievements to display');
         }
     });
     
@@ -782,10 +894,20 @@
         updateRecentFileOption();
         
         // Check for first time initialization instead of goal setup immediately
+        console.log('Calling checkFirstTime on DOMContentLoaded...');
         checkFirstTime();
         
-        // Request homepage stats
+        // Request homepage stats and queued achievements
         ipcRenderer.send('get-homepage-stats');
+        ipcRenderer.send('get-queued-achievements');
+        
+        // Refresh stats when window regains focus (after returning from editor)
+        window.addEventListener('focus', () => {
+            console.log('Homepage window focused, refreshing stats...');
+            ipcRenderer.send('get-homepage-stats');
+            // Also check for queued achievements from completed sessions
+            ipcRenderer.send('get-queued-achievements');
+        });
         
         // New Tutorial System Event Listeners
         document.getElementById('selectFolderBtn').addEventListener('click', () => {
@@ -804,23 +926,51 @@
           prevTutorialStep();
         });
         
-        document.getElementById('goalNowBtn').addEventListener('click', () => {
-          hideGoalPreference();
-          // Show the existing long-term goal modal
-          setTimeout(() => {
-            showModal();
-          }, 300);
-        });
-        
-        document.getElementById('goalLaterBtn').addEventListener('click', () => {
-          hideGoalPreference();
-          // Disable long-term goals
-          ipcRenderer.send('disable-long-term-goals');
-          showTutorialComplete();
-        });
         
         document.getElementById('finishTutorialBtn').addEventListener('click', () => {
           hideTutorialComplete();
+          // Show daily goals setup after tutorial completion
+          setTimeout(() => {
+            showModal();
+          }, 500);
+        });
+        
+        // Daily goals modal functionality
+        function updateModalGoalUI() {
+            const selectedType = document.querySelector('input[name="modalGoalType"]:checked')?.value;
+            const indefiniteInputs = document.getElementById('modalIndefiniteInputs');
+            const longTermInputs = document.getElementById('modalLongTermInputs');
+            const streakSetting = document.getElementById('modalStreakSetting');
+            const startBtn = document.getElementById('startGoalBtn');
+            
+            // Hide all inputs first
+            indefiniteInputs.style.display = 'none';
+            longTermInputs.style.display = 'none';
+            streakSetting.style.display = 'none';
+            
+            if (selectedType === 'freewrite') {
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start Freewriting!';
+            } else if (selectedType === 'indefinite') {
+                indefiniteInputs.style.display = 'block';
+                streakSetting.style.display = 'block';
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start my goal!';
+            } else if (selectedType === 'longterm') {
+                longTermInputs.style.display = 'block';
+                streakSetting.style.display = 'block';
+                startBtn.disabled = false;
+                startBtn.textContent = 'Start my goal!';
+                updateWordsPerDay();
+            } else {
+                startBtn.disabled = true;
+                startBtn.textContent = 'Start my goal!';
+            }
+        }
+        
+        // Add event listeners for modal goal type selection
+        document.querySelectorAll('input[name="modalGoalType"]').forEach(radio => {
+            radio.addEventListener('change', updateModalGoalUI);
         });
         
         // Long-term goals event listeners
@@ -828,30 +978,51 @@
         document.getElementById('goalTotalDays').addEventListener('input', updateWordsPerDay);
 
         document.getElementById('startGoalBtn').addEventListener('click', () => {
-            const totalWords = parseInt(document.getElementById('goalTotalWords').value);
-            const totalDays = parseInt(document.getElementById('goalTotalDays').value);
+            const selectedType = document.querySelector('input[name="modalGoalType"]:checked')?.value;
+            const streakPreservation = document.querySelector('input[name="modalStreakPreservation"]:checked')?.value || 'any';
             
-            ipcRenderer.send('set-long-term-goal', {
-                enabled: true,
-                totalWords: totalWords,
-                totalDays: totalDays,
-                startDate: new Date().toISOString()
-            });
-            
-            hideModal();
-            // If this is during tutorial, show completion
-            if (document.getElementById('tutorialCompleteOverlay')) {
-                showTutorialComplete();
+            let goalData;
+            if (selectedType === 'freewrite') {
+                goalData = {
+                    type: 'disabled'
+                };
+            } else if (selectedType === 'indefinite') {
+                goalData = {
+                    type: 'indefinite',
+                    dailyWordTarget: parseInt(document.getElementById('modalDailyTarget').value) || 500,
+                    streakPreservation: streakPreservation
+                };
+            } else if (selectedType === 'longterm') {
+                const totalWords = parseInt(document.getElementById('goalTotalWords').value);
+                const totalDays = parseInt(document.getElementById('goalTotalDays').value);
+                goalData = {
+                    type: 'longterm',
+                    longtermTotalWords: totalWords,
+                    longtermTotalDays: totalDays,
+                    streakPreservation: streakPreservation,
+                    longtermStartDate: new Date().toISOString()
+                };
             }
+            
+            if (goalData) {
+                ipcRenderer.send('set-daily-goal', goalData);
+            }
+
+            hideModal();
+            // Complete tutorial since goal setup is now part of tutorial flow
+            ipcRenderer.send('tutorial-completed');
+
+            // Refresh page to show Today's Progress widget with new goal
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
         });
 
         document.getElementById('disableGoalBtn').addEventListener('click', () => {
             ipcRenderer.send('disable-goal-prompting');
             hideModal();
-            // If this is during tutorial, show completion
-            if (document.getElementById('tutorialCompleteOverlay')) {
-                showTutorialComplete();
-            }
+            // Complete tutorial since goal setup is now part of tutorial flow
+            ipcRenderer.send('tutorial-completed');
         });
         
         // Mode toggle handler
@@ -909,12 +1080,12 @@
         // Save when sliders change
         document.getElementById('wordCountSlider').addEventListener('change', function() {
             console.log('Word count slider changed:', this.value);
-            // Settings will be saved when starting session
+            saveSliderValues(); // Save just slider values without reloading
         });
         
         document.getElementById('timerSlider').addEventListener('change', function() {
             console.log('Timer slider changed:', this.value);
-            // Settings will be saved when starting session
+            saveSliderValues(); // Save just slider values without reloading
         });
 
         
@@ -932,7 +1103,7 @@
         
         wordCountSlider.addEventListener('input', function() {
             wordCountValue.textContent = this.value;
-            updateProgressBar();
+            // Don't update progress bar from slider changes - it's independent now
         });
 
         const timerSlider = document.getElementById('timerSlider');
@@ -1004,6 +1175,11 @@
         // Disable long-term goal tracking
         ipcRenderer.send('disable-long-term-goals');
         hideCelebrationModal();
+
+        // Force page refresh to immediately hide Today's Progress section
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       });
     });
     
@@ -1019,6 +1195,18 @@
         // Store long-term goal info
         if (settings.longTermGoals) {
             longTermGoal = settings.longTermGoals;
+        }
+        
+        // Store daily goals info
+        if (settings.dailyGoals) {
+            dailyGoals = settings.dailyGoals;
+            console.log('Daily goals loaded from settings:', dailyGoals);
+            
+            // If we already have stats, refresh the progress bar immediately
+            if (currentStats) {
+                console.log('Refreshing progress bar with current stats:', currentStats.todayWords);
+                updateProgressBar(currentStats.todayWords, currentStats.goalProgressToday, currentStats.totalWords, currentStats.wordsFromGoalStart);
+            }
         }
         
         if (settings.mode === 'wordcount') {
@@ -1051,8 +1239,7 @@
             }
         });
         
-        // Update progress bar with current data
-        updateProgressBar();
+        // Progress bar will be updated when stats are received
     });
 
     // Listen for settings updates from other windows (like settings page)
@@ -1073,6 +1260,9 @@
     ipcRenderer.on('homepage-stats', (event, stats) => {
         console.log('Homepage received stats:', stats);
         
+        // Store current stats globally for immediate access
+        currentStats = stats;
+        
         const statCards = document.querySelectorAll('.stat-card');
         
         if (statCards[0]) {
@@ -1089,20 +1279,26 @@
         longTermGoal = stats.longTermGoals;
         totalWordsWritten = stats.wordsFromGoalStart || 0;
         
+        // Set daily goals data
+        if (stats.dailyGoals) {
+            dailyGoals = stats.dailyGoals;
+            console.log('Daily goals loaded:', dailyGoals);
+        }
+        
         console.log('Updated longTermGoal:', longTermGoal);
         console.log('Words from goal start:', totalWordsWritten);
         
-        // Update progress bar with today's words and goal progress
+        // Update progress bar immediately with today's words and goal progress
         console.log('Updating progress bar with:', {
             todayWords: stats.todayWords,
             goalProgressToday: stats.goalProgressToday
         });
-        updateProgressBar(stats.todayWords, stats.goalProgressToday);
+        updateProgressBar(stats.todayWords, stats.goalProgressToday, stats.totalWords, stats.wordsFromGoalStart);
         
         // Show celebration modal if goal completed
         if (stats.goalCompleted) {
             setTimeout(() => {
-                showCelebrationModal();
+                showCelebrationModal(stats.goalCompletionInfo);
             }, 1000); // Small delay for better UX
         }
         
@@ -1119,7 +1315,25 @@
                 sessionStorage.setItem(goalKey, 'true');
                 console.log('Showing celebration modal for completed goal');
                 setTimeout(() => {
-                    showCelebrationModal();
+                    showCelebrationModal(null);
+                }, 2000); // Longer delay for page load
+            }
+        }
+        
+        // Show celebration modal for completed dailyGoals with long-term targets
+        if (stats.dailyGoals && stats.dailyGoals.completed && stats.dailyGoals.longtermStartDate) {
+            const dailyGoalKey = `celebrationShown_dailyGoal_${stats.dailyGoals.longtermStartDate}`;
+            console.log('Checking celebration modal for completed daily goal:', {
+                completed: stats.dailyGoals.completed,
+                goalKey: dailyGoalKey,
+                alreadyShown: sessionStorage.getItem(dailyGoalKey)
+            });
+            
+            if (!sessionStorage.getItem(dailyGoalKey)) {
+                sessionStorage.setItem(dailyGoalKey, 'true');
+                console.log('Showing celebration modal for completed daily goal');
+                setTimeout(() => {
+                    showCelebrationModal(null);
                 }, 2000); // Longer delay for page load
             }
         }
@@ -1129,7 +1343,7 @@
     ipcRenderer.on('goal-completed', () => {
         console.log('Received goal-completed notification');
         setTimeout(() => {
-            showCelebrationModal();
+            showCelebrationModal(null);
         }, 2000); // Longer delay when coming from session
     });
     
@@ -1162,7 +1376,7 @@
             docOption.checked = true;
         }
         
-        updateProgressBar();
+        // Progress bar will be updated when stats load, not from settings
     }
 
     function saveCurrentSettingsSync(sessionSettings) {
@@ -1212,6 +1426,19 @@
     }
     
     // Keep the old async version for other uses
+    // Simple function to save just slider values without reloading settings
+    function saveSliderValues() {
+        const sliderSettings = {
+            mode: document.getElementById('modeToggle').checked ? 'wordcount' : 'timer',
+            timerDuration: parseInt(document.getElementById('timerSlider').value),
+            wordCountGoal: parseInt(document.getElementById('wordCountSlider').value),
+            documentOption: document.querySelector('input[name="docOption"]:checked').value
+        };
+        
+        console.log('Saving slider values:', sliderSettings);
+        ipcRenderer.send('save-slider-settings', sliderSettings);
+    }
+
     function saveCurrentSettings() {
         // Get current active mode
         const activeModeBtn = document.querySelector('.mode-btn.active');
@@ -1386,49 +1613,222 @@
     });
 
     let longTermGoal = null;
+    let dailyGoals = null;
+    let currentStats = null;
 
-    function updateProgressBar(todayWords = 0, goalProgressToday = 0) {
+    function updateProgressBar(todayWords = 0, goalProgressToday = 0, totalWords = 0, wordsFromGoalStart = 0) {
+        console.log('updateProgressBar called with:', { todayWords, goalProgressToday, totalWords, wordsFromGoalStart });
+        console.log('Current dailyGoals:', dailyGoals);
+
         const progressFill = document.getElementById('progressFill');
         const todayProgressText = document.getElementById('todayProgress');
         const goalMetaText = document.getElementById('goalMeta');
+        const todayWordsDisplay = document.getElementById('todayWordsDisplay');
+
+
+        let dailyGoalWords = 1000; // Default fallback
+        let goalWords = dailyGoalWords;
+        let totalProgress = 0; // For long-term goal progress
+
+        // Hide the redundant today's words display since it's shown in the progress bar
+        if (todayWordsDisplay) {
+            todayWordsDisplay.style.display = 'none';
+        }
         
-        let dailyGoal = parseInt(document.getElementById('wordCountSlider').value);
-        let goalWords = dailyGoal;
-        
-        // Use long-term goal if available
-        if (longTermGoal && longTermGoal.enabled) {
-            dailyGoal = Math.ceil(longTermGoal.totalWords / longTermGoal.totalDays);
-            goalWords = dailyGoal;
-            
-            // Calculate days remaining
-            const startDate = new Date(longTermGoal.startDate);
-            const today = new Date();
-            const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
-            const daysRemaining = Math.max(0, longTermGoal.totalDays - daysPassed);
-            
-            // Calculate total words written since goal started
-            const totalWordsFromGoalStart = getCurrentTotalWords();
-            
-            // Show goal meta info
-            if (longTermGoal.completed) {
-                goalMetaText.textContent = `Goal Completed! 🎉\n${totalWordsFromGoalStart.toLocaleString()} / ${longTermGoal.totalWords.toLocaleString()} total`;
-            } else {
-                goalMetaText.textContent = `${totalWordsFromGoalStart.toLocaleString()} / ${longTermGoal.totalWords.toLocaleString()} total\n${daysRemaining} days left`;
+        // Use daily goals if available
+        if (dailyGoals && dailyGoals.type !== 'disabled') {
+            if (dailyGoals.type === 'indefinite') {
+                // Indefinite daily goal
+                dailyGoalWords = dailyGoals.dailyWordTarget || 500;
+                goalWords = dailyGoalWords;
+
+                goalMetaText.style.display = 'none';
+            } else if (dailyGoals.type === 'longterm') {
+                // Long-term goal with daily targets
+                dailyGoalWords = Math.ceil(dailyGoals.longtermTotalWords / dailyGoals.longtermTotalDays);
+                goalWords = dailyGoalWords;
+                
+                // Calculate days remaining
+                let startDate;
+                if (dailyGoals.longtermStartDate) {
+                    startDate = new Date(dailyGoals.longtermStartDate);
+                } else {
+                    startDate = new Date(); // Default to today if missing
+                }
+
+                // Always show the long-term goal display when we have goal parameters
+                if (dailyGoals.longtermTotalWords && dailyGoals.longtermTotalDays) {
+                    const today = new Date();
+                    const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                    const daysRemaining = Math.max(0, dailyGoals.longtermTotalDays - daysPassed);
+
+                    
+                    // Show goal meta info with cumulative progress
+                    // Use backend wordsFromGoalStart if available
+                    totalProgress = wordsFromGoalStart;
+
+                    // If backend calculation is 0, we need a smarter fallback
+                    if (totalProgress === 0 && dailyGoals.longtermStartDate) {
+                        // Only use fallback if we have a valid start date
+                        const goalStart = new Date(dailyGoals.longtermStartDate);
+                        const now = new Date();
+                        const goalStartTime = goalStart.getTime();
+                        const timeSinceGoalStart = now.getTime() - goalStartTime;
+
+                        // Only count progress if goal was set more than 5 minutes ago
+                        // This prevents counting pre-existing words when setting a new goal
+                        if (timeSinceGoalStart > 5 * 60 * 1000) { // 5 minutes
+                            const todayStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+                            if (goalStartTime >= todayStartTime) {
+                                // Goal started today, use today's words as progress (but this might overcount)
+                                totalProgress = todayWords;
+                                console.log('Goal started today (>5min ago), using todayWords as fallback:', todayWords);
+                            } else {
+                                // Goal started earlier, use total words as fallback
+                                totalProgress = totalWords;
+                                console.log('Goal started earlier, using totalWords as fallback:', totalWords);
+                            }
+                        } else {
+                            // Goal was just set, don't count any existing words
+                            totalProgress = 0;
+                            console.log('Goal just set (<5min ago), starting progress at 0');
+                        }
+                    } else if (totalProgress === 0) {
+                        // No start date (brand new goal), progress stays at 0
+                        console.log('New goal with no start date, progress remains 0');
+                    }
+
+                    const progressPercentage = Math.min((totalProgress / dailyGoals.longtermTotalWords) * 100, 100);
+
+                    // Check for goal completion in frontend as fallback
+                    // Only trigger celebration if goal was actually completed through writing since goal start
+                    if (totalProgress >= dailyGoals.longtermTotalWords && !dailyGoals.completed && dailyGoals.longtermStartDate) {
+                        const goalStart = new Date(dailyGoals.longtermStartDate);
+                        const timeSinceGoalStart = new Date().getTime() - goalStart.getTime();
+
+                        // Celebrate if we have actual progress (regardless of time since goal was set)
+                        if (totalProgress > 0) {
+                            // Check if we've already shown celebration for this goal
+                            const celebrationKey = `frontendCelebrationShown_${dailyGoals.longtermTotalWords}_${dailyGoals.longtermTotalDays}_${dailyGoals.longtermStartDate}`;
+
+                            if (!sessionStorage.getItem(celebrationKey)) {
+                                console.log('Frontend detected goal completion! Triggering celebration modal...');
+                                sessionStorage.setItem(celebrationKey, 'true');
+
+                            setTimeout(() => {
+                                const completionInfo = {
+                                    completed: true,
+                                    totalWords: dailyGoals.longtermTotalWords,
+                                    wordsWritten: totalProgress,
+                                    daysTaken: 1, // Since start date is null, assume 1 day
+                                    totalDays: dailyGoals.longtermTotalDays,
+                                    completedEarly: true,
+                                    daysAhead: dailyGoals.longtermTotalDays - 1
+                                };
+                                showCelebrationModal(completionInfo);
+                            }, 1000);
+                        }
+                    }
+                }
+
+                    console.log('Progress calculation debug:', {
+                        wordsFromGoalStart,
+                        totalProgress,
+                        totalWords,
+                        todayWords,
+                        longtermTotalWords: dailyGoals.longtermTotalWords,
+                        progressPercentage,
+                        startDate: dailyGoals.longtermStartDate,
+                        hasStartDate: !!dailyGoals.longtermStartDate,
+                        goalType: dailyGoals.type
+                    });
+
+
+                    goalMetaText.innerHTML = `
+                        <div style="margin-bottom: 4px; font-size: 0.9em; display: flex; justify-content: space-between; width: 100%; gap: 5px;">
+                            <span><strong>Goal:</strong> ${dailyGoals.longtermTotalWords.toLocaleString()} words</span>
+                            <span><strong>Progress:</strong> ${totalProgress.toLocaleString()} words (${Math.round(progressPercentage)}%)</span>
+                        </div>
+                        <div style="margin-bottom: 4px; font-size: 0.9em; display: flex; justify-content: space-between; width: 100%; gap: 5px;">
+                            <span>Day ${Math.min(dailyGoals.longtermTotalDays - daysRemaining + 1, dailyGoals.longtermTotalDays)} of ${dailyGoals.longtermTotalDays}</span>
+                            <span style="color: ${daysRemaining > 7 ? 'var(--color-text-muted)' : daysRemaining > 3 ? '#f39c12' : '#e74c3c'};">${daysRemaining} days left</span>
+                        </div>
+                    `;
+                    goalMetaText.style.display = 'block';
+                } else {
+                    goalMetaText.style.display = 'none';
+                }
             }
-            goalMetaText.style.display = 'block';
         } else {
-            goalMetaText.style.display = 'none';
+            // Fallback to old long-term goal system for backward compatibility
+            if (longTermGoal && longTermGoal.enabled) {
+                dailyGoalWords = Math.ceil(longTermGoal.totalWords / longTermGoal.totalDays);
+                goalWords = dailyGoalWords;
+                
+                // Calculate days remaining
+                const startDate = new Date(longTermGoal.startDate);
+                const today = new Date();
+                const daysPassed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+                const daysRemaining = Math.max(0, longTermGoal.totalDays - daysPassed);
+                
+                // Calculate total words written since goal started
+                const totalWordsFromGoalStart = getCurrentTotalWords();
+                
+
+                // Show goal meta info
+                if (longTermGoal.completed) {
+                    goalMetaText.innerHTML = `
+                        <div style="font-size: 0.9em; text-align: center; font-weight: bold; color: var(--color-accent);">
+                            🎉 Goal Completed! 🎉
+                        </div>
+                        <div style="font-size: 0.9em; text-align: center;">
+                            ${totalWordsFromGoalStart.toLocaleString()} / ${longTermGoal.totalWords.toLocaleString()} words (100%)
+                        </div>
+                    `;
+                } else {
+                    // For legacy long-term goals, totalWordsFromGoalStart is the cumulative total since goal started
+                    const actualProgress = totalWordsFromGoalStart || 0;
+                    const progressPercentage = Math.min((actualProgress / longTermGoal.totalWords) * 100, 100);
+                    goalMetaText.innerHTML = `
+                        <div style="margin-bottom: 4px; font-size: 0.9em; display: flex; justify-content: space-between; width: 100%; gap: 5px;">
+                            <span><strong>Goal:</strong> ${longTermGoal.totalWords.toLocaleString()} words</span>
+                            <span><strong>Progress:</strong> ${actualProgress.toLocaleString()} words (${Math.round(progressPercentage)}%)</span>
+                        </div>
+                        <div style="margin-bottom: 4px; font-size: 0.9em; display: flex; justify-content: space-between; width: 100%; gap: 5px;">
+                            <span>Day ${Math.min(longTermGoal.totalDays - daysRemaining + 1, longTermGoal.totalDays)} of ${longTermGoal.totalDays}</span>
+                            <span style="color: ${daysRemaining > 7 ? 'var(--color-text-muted)' : daysRemaining > 3 ? '#f39c12' : '#e74c3c'};">${daysRemaining} days left</span>
+                        </div>
+                    `;
+                }
+                goalMetaText.style.display = 'block';
+            } else {
+                goalMetaText.style.display = 'none';
+            }
         }
         
         let displayWords = todayWords;
-        let displayGoal = goalWords;
-        let percentage = Math.min((todayWords / goalWords) * 100, 100);
+        let displayGoal = dailyGoalWords;
+        let percentage = Math.min((todayWords / dailyGoalWords) * 100, 100);
         
-        // For long-term goals, show GOAL PROGRESS toward daily target (not total daily words)
-        if (longTermGoal && longTermGoal.enabled) {
+        // For daily goals, show today's total words toward daily target
+        if (dailyGoals && dailyGoals.type !== 'disabled') {
+            if (dailyGoals.type === 'longterm') {
+                // For long-term goals, use the same filtered progress as text and metadata
+                displayWords = totalProgress;
+                displayGoal = dailyGoalWords;
+                percentage = Math.min((totalProgress / dailyGoalWords) * 100, 100);
+            } else {
+                // For other daily goals, use today's words
+                displayWords = todayWords;
+                displayGoal = dailyGoalWords;
+                percentage = Math.min((todayWords / dailyGoalWords) * 100, 100);
+            }
+        } else if (longTermGoal && longTermGoal.enabled) {
+            // Fallback to old long-term goal logic (goal progress)
             displayWords = goalProgressToday;  // Use goal progress instead of total daily words
-            displayGoal = dailyGoal;
-            percentage = Math.min((goalProgressToday / dailyGoal) * 100, 100);
+            displayGoal = dailyGoalWords;
+            percentage = Math.min((goalProgressToday / dailyGoalWords) * 100, 100);
             
             // If goal is completed, show it as 100% filled
             if (longTermGoal.completed) {
@@ -1448,7 +1848,12 @@
             progressFill.style.background = '#27ae60';
         }
         
-        todayProgressText.textContent = `${displayWords} / ${displayGoal} words`;
+        // For long-term goals, show the same filtered progress as in the metadata
+        if (dailyGoals && dailyGoals.type === 'longterm') {
+            todayProgressText.textContent = `${totalProgress} / ${dailyGoalWords} words`;
+        } else {
+            todayProgressText.textContent = `${displayWords} / ${displayGoal} words`;
+        }
     }
 
     let totalWordsWritten = 0; // Cache the total words globally
@@ -1457,7 +1862,32 @@
         return totalWordsWritten;
     }
 
-    updateProgressBar();
+    // Initial progress bar update will happen when stats are loaded
+
+    // Add reset functionality (for debugging/testing)
+    window.resetAppData = async function() {
+      try {
+        console.log('Starting app reset...');
+        // Clear browser storage
+        sessionStorage.clear();
+        localStorage.clear();
+
+        // Call backend to reset stored data
+        const result = await ipcRenderer.invoke('reset-app-data');
+
+        if (result.success) {
+          console.log('App reset successful - reloading...');
+          // Reload the app to start fresh
+          window.location.reload();
+        } else {
+          console.error('App reset failed:', result.error);
+        }
+      } catch (error) {
+        console.error('Error resetting app:', error);
+      }
+    };
+
+    // Script end
 </script>
     <script src="achievement-notifications.js"></script>
     <script src="visibility-controller.js"></script>

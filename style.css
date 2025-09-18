@@ -630,13 +630,16 @@ body.homepage .container {
   padding: 1.75rem;
   border-radius: 16px;
   text-align: center;
-  max-width: 520px;
-  max-height: 60vh;
+  max-width: 570px;
+  max-height: 85vh;
   width: 90%;
   border: 1px solid var(--color-border);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
   transform: scale(0.8) translateY(-20px);
   transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .goal-overlay.show .goal-modal {
@@ -1208,4 +1211,117 @@ body.homepage .container {
   color: var(--color-accent);
   font-size: 0.9rem;
   font-weight: 500;
+}
+
+/* Daily Goal Modal Styles */
+.goal-type-selector {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem 0;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+
+.goal-type-option {
+  flex: 1;
+  min-width: 140px;
+}
+
+.goal-type-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+}
+
+.goal-type-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 1rem;
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  height: 100%;
+}
+
+.goal-type-card:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-2px);
+}
+
+.goal-type-option input:checked + .goal-type-card {
+  border-color: var(--color-accent);
+  background: var(--color-accent-muted);
+}
+
+.goal-type-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.goal-type-card h3 {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+  color: var(--color-text-primary);
+}
+
+.goal-type-card p {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.streak-setting {
+  background: var(--color-bg-tertiary);
+  border-radius: 8px;
+  padding: 0.875rem;
+  margin: 0.875rem 0;
+}
+
+.streak-setting h4 {
+  color: var(--color-accent);
+  font-size: 1rem;
+  margin: 0 0 0.75rem 0;
+}
+
+.streak-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.streak-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.goal-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Make goal inputs sections more compact */
+.goal-inputs {
+  margin: 0.875rem 0;
+}
+
+.goal-inputs .input-group {
+  margin-bottom: 0.75rem;
+}
+
+.goal-inputs .input-group:last-child {
+  margin-bottom: 0;
+}
+
+.goal-calculation {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
 }
