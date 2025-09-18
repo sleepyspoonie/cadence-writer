@@ -14,23 +14,31 @@ let sessionStartWords = 0
 const achievementSystem = new AchievementSystem()
 
 async function createWindow () {
-  // Track app start time for Procrastinator's Special achievement
-  const stats = await loadStats();
-  if (!stats.appStartTime) {
-    stats.appStartTime = Date.now();
-    await saveStats(stats);
-  }
-  
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    fullscreen: false,
-    autoHideMenuBar: true,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+  try {
+    console.log('Loading stats...')
+    // Track app start time for Procrastinator's Special achievement
+    const stats = await loadStats();
+    if (!stats.appStartTime) {
+      stats.appStartTime = Date.now();
+      await saveStats(stats);
     }
-  })
+
+    console.log('Creating browser window...')
+    mainWindow = new BrowserWindow({
+      width: 1200,
+      height: 800,
+      fullscreen: false,
+      autoHideMenuBar: true,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false
+      }
+    })
+    console.log('Browser window created')
+  } catch (error) {
+    console.error('Error in createWindow:', error)
+    throw error
+  }
  
   mainWindow.on('close', async () => {
     // Track total app usage time for Procrastinator's Special
@@ -58,9 +66,14 @@ async function createWindow () {
     
     mainWindow.webContents.send('save-before-close')
   })
- 
-  mainWindow.loadFile('index.html')
- 
+
+  console.log('Loading index.html...')
+  mainWindow.loadFile('index.html').then(() => {
+    console.log('index.html loaded successfully')
+  }).catch((error) => {
+    console.error('Failed to load index.html:', error)
+  })
+
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'F12') {
       mainWindow.webContents.toggleDevTools()
@@ -850,8 +863,16 @@ async function initializeStore() {
 }
 
 app.whenReady().then(async () => {
-  await initializeStore()
-  createWindow()
+  try {
+    console.log('App starting...')
+    await initializeStore()
+    console.log('Store initialized')
+    await createWindow()
+    console.log('Window created')
+  } catch (error) {
+    console.error('Error during app startup:', error)
+    dialog.showErrorBox('Startup Error', `Failed to start app: ${error.message}`)
+  }
 })
 
 app.on('window-all-closed', () => {
