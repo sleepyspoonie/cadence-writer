@@ -392,7 +392,7 @@ ipcMain.on('get-session-settings', (event) => {
 });
 
 // Stats file management
-const statsPath = path.join(app.getPath('userData'), 'stats.json');
+let statsPath; // Will be initialized when app is ready
 
 async function loadStats() {
   try {
@@ -865,6 +865,11 @@ async function initializeStore() {
 app.whenReady().then(async () => {
   try {
     console.log('App starting...')
+
+    // Initialize paths that require app to be ready
+    statsPath = path.join(app.getPath('userData'), 'stats.json')
+    console.log('Stats path initialized:', statsPath)
+
     await initializeStore()
     console.log('Store initialized')
     await createWindow()
@@ -2509,13 +2514,10 @@ async function performCompleteReset() {
 
 // Trigger reset on app startup if flag is set - but after store is initialized
 if (shouldReset) {
-  // Wait for the main window to be created and store to be ready
-  app.on('ready', async () => {
-    // Give store time to initialize
-    setTimeout(async () => {
-      await performCompleteReset();
-    }, 2000);
-  });
+  // Schedule reset after app is ready (handled in main whenReady handler)
+  setTimeout(async () => {
+    await performCompleteReset();
+  }, 2000);
 }
 
 // Keep the manual reset function too
