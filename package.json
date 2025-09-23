@@ -30,8 +30,8 @@
     },
     "files": [
       "**/*",
-      "!node_modules/**/*",
-      "!dist/**/*"
+      "!dist/**/*",
+      "!.git/**/*"
     ],
     "publish": null,
     "win": {
