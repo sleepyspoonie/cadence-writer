@@ -32,16 +32,6 @@ jobs:
       if: matrix.os == 'windows-latest'
       run: npm run build:win
 
-    - name: List Windows dist files
-      if: matrix.os == 'windows-latest'
-      run: |
-        echo "Contents of dist directory:"
-        dir dist
-        echo "Contents of win-unpacked directory:"
-        dir "dist\win-unpacked"
-        echo "Focus Writer.exe size:"
-        dir "dist\win-unpacked\Focus Writer.exe"
-
     - name: Build macOS
       if: matrix.os == 'macos-latest'
       run: npm run build:mac
