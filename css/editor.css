@@ -1,0 +1,493 @@
+/* editor.css — writing session page.
+   Layout: slim fading header, centered paper surface that fills the window,
+   theme-aware Quill toolbar. Colors come from theme-manager CSS variables. */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    overflow: hidden;
+}
+
+/* Main container */
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100vw;
+    background: var(--color-bg-primary);
+    overflow: hidden;
+}
+
+/* ---- Header: slim, quiet, fades while typing ---- */
+.editor-header {
+    background: transparent;
+    padding: 0.65rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    transition: opacity 0.55s ease;
+}
+
+.session-info {
+    display: flex;
+    gap: 1.75rem;
+    align-items: baseline;
+}
+
+.session-mode {
+    color: var(--color-accent);
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.session-progress {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+}
+
+.progress-label {
+    color: var(--color-text-faint);
+    font-size: 0.8rem;
+}
+
+.progress-value {
+    color: var(--color-text-primary);
+    font-size: 1.05rem;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Controls: quiet ghost buttons */
+.editor-controls {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.control-btn {
+    background: transparent;
+    color: var(--color-text-muted);
+    border: 1px solid transparent;
+    padding: 0.4rem 0.85rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.control-btn:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-secondary);
+    border-color: var(--color-border);
+}
+
+.control-btn.active {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+}
+
+#exitBtn:hover {
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.4);
+    background: rgba(248, 113, 113, 0.08);
+}
+
+.fullscreen-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-text-faint);
+    padding: 0.4rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s ease, background 0.2s ease;
+}
+
+.fullscreen-btn:hover {
+    color: var(--color-text-primary);
+    background: var(--color-bg-secondary);
+}
+
+.fullscreen-btn svg {
+    display: block;
+}
+
+/* ---- Writing surface: fills the window, gently rounded paper ---- */
+#editor-wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: stretch;
+    /* Bottom padding keeps the page fully on screen instead of bleeding off. */
+    padding: 0.25rem 1.25rem 1.25rem;
+    background: var(--color-bg-primary);
+    width: 100%;
+    overflow: hidden;
+}
+
+.editor-main {
+    width: 100%;
+    max-width: 960px;
+    background: var(--editor-bg);
+    border-radius: 14px;
+    box-shadow: 0 4px 32px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    max-height: 100%;
+}
+
+/* Quill turns #editor into .ql-container, so these must not fight the flex
+   sizing below — height is owned by `flex: 1` on .ql-container. */
+#editor {
+    border: none !important;
+    min-height: 0;
+}
+
+/* ---- Quill toolbar: compact, centered, theme-aware, fades while typing ---- */
+.ql-toolbar {
+    background: var(--editor-toolbar) !important;
+    border: none !important;
+    border-bottom: 1px solid var(--editor-border) !important;
+    padding: 8px 16px !important;
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    transition: opacity 0.55s ease;
+}
+
+/* Chrome fade while typing (class toggled from editor.js) */
+.editor-container.chrome-faded .editor-header,
+.editor-container.chrome-faded .ql-toolbar {
+    opacity: 0.08;
+}
+
+/* ---- Quill container / content ---- */
+.ql-container {
+    flex: 1 !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border: none !important;
+    font-family: 'Georgia', 'Charter', 'Times New Roman', serif !important;
+    background: var(--editor-bg);
+}
+
+.ql-editor {
+    max-width: 70ch;
+    margin: 0 auto !important;
+    padding: 3rem clamp(2rem, 6vw, 4rem) 22vh !important;
+    line-height: 1.85 !important;
+    color: var(--editor-text) !important;
+    background: var(--editor-bg);
+    caret-color: var(--color-accent);
+    min-height: 100% !important;
+    overflow: visible !important;
+}
+
+.ql-editor ::selection,
+.ql-editor::selection {
+    background: var(--color-accent-muted, rgba(20, 184, 166, 0.25));
+}
+
+.ql-editor h1, .ql-editor h2, .ql-editor h3 {
+    color: var(--editor-text) !important;
+}
+
+.ql-editor:focus {
+    outline: none !important;
+}
+
+.ql-editor.ql-blank::before {
+    color: var(--color-text-muted);
+    font-style: normal;
+    left: clamp(2rem, 6vw, 4rem);
+    right: clamp(2rem, 6vw, 4rem);
+}
+
+/* Quill toolbar buttons */
+.ql-toolbar button {
+    width: 28px !important;
+    height: 28px !important;
+    padding: 3px !important;
+    margin: 0 !important;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+}
+
+.ql-toolbar button:hover,
+.ql-toolbar button.ql-active {
+    color: var(--color-accent) !important;
+    background: var(--color-accent-muted) !important;
+}
+
+.ql-toolbar .ql-stroke {
+    stroke: #666 !important;
+}
+
+.ql-toolbar .ql-fill {
+    fill: #666 !important;
+}
+
+.ql-toolbar button:hover .ql-stroke,
+.ql-toolbar button.ql-active .ql-stroke {
+    stroke: var(--color-accent) !important;
+}
+
+.ql-toolbar button:hover .ql-fill,
+.ql-toolbar button.ql-active .ql-fill {
+    fill: var(--color-accent) !important;
+}
+
+.ql-toolbar .ql-picker {
+    color: #666 !important;
+}
+
+.ql-toolbar .ql-picker-options {
+    background: var(--editor-bg) !important;
+    border: 1px solid var(--editor-border) !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.15) !important;
+}
+
+/* Success modal */
+.success-modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--color-bg-secondary);
+    padding: 3rem;
+    border-radius: 16px;
+    text-align: center;
+    z-index: 1000;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    border: 1px solid var(--color-border);
+}
+
+.success-modal.show {
+    display: block;
+}
+
+.success-modal h2 {
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+    font-size: 1.75rem;
+}
+
+.success-modal p {
+    color: var(--color-text-secondary);
+    margin-bottom: 2rem;
+    font-size: 1.125rem;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: 0.875rem 2rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-size: 0.95rem;
+}
+
+.modal-btn.primary {
+    background: var(--color-accent);
+    color: #000;
+}
+
+.modal-btn.secondary {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+}
+
+.modal-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--color-overlay);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    pointer-events: none;
+}
+
+.overlay.show {
+    display: block;
+}
+
+/* Scrollbar styling */
+#editor-wrapper::-webkit-scrollbar,
+.ql-container::-webkit-scrollbar {
+    width: 10px;
+}
+
+#editor-wrapper::-webkit-scrollbar-track,
+.ql-container::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#editor-wrapper::-webkit-scrollbar-thumb,
+.ql-container::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 5px;
+}
+
+#editor-wrapper::-webkit-scrollbar-thumb:hover,
+.ql-container::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-hover);
+}
+
+/* Reward Popup */
+.reward-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1000;
+    background: var(--color-bg-secondary);
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    min-width: 300px;
+    animation: rewardBounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.reward-content h3 {
+    color: var(--color-accent);
+    margin-bottom: 0.5rem;
+    font-size: 1.5rem;
+}
+
+.reward-subtitle {
+    color: var(--color-text-muted);
+    font-style: italic;
+    font-size: 0.9rem;
+    margin: 0.5rem 0 1rem 0;
+    line-height: 1.4;
+}
+
+.reward-image {
+    width: 150px;
+    height: 150px;
+    margin: 1rem auto;
+    background: var(--color-bg-tertiary);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 3rem;
+    border: 3px solid var(--color-accent);
+}
+
+.reward-image img {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 7px;
+}
+
+@keyframes rewardBounce {
+    0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
+    50% { transform: translate(-50%, -50%) scale(1.1); }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* Punishment Mode - Red Background Transition */
+.editor-container.punishment-mode {
+    transition: background-color var(--grace-period, 10s) ease-in-out;
+}
+
+.editor-container.punishment-mode .ql-editor,
+.editor-container.punishment-mode #editor-wrapper,
+.editor-container.punishment-mode #editor {
+    transition: background-color var(--grace-period, 10s) ease-in-out;
+}
+
+.editor-container.punishment-warning {
+    transition: background-color var(--user-grace-period, 10s) linear;
+}
+
+.editor-container.punishment-warning.transitioning {
+    background-color: #ffaaaa !important;
+}
+
+.editor-container.punishment-warning .ql-editor,
+.editor-container.punishment-warning #editor-wrapper,
+.editor-container.punishment-warning #editor {
+    transition: background-color var(--user-grace-period, 10s) linear;
+}
+
+.editor-container.punishment-warning.transitioning .ql-editor,
+.editor-container.punishment-warning.transitioning #editor-wrapper,
+.editor-container.punishment-warning.transitioning #editor {
+    background-color: #ffaaaa !important;
+}
+
+.editor-container.punishment-active {
+    background-color: #ff4444 !important;
+}
+
+.editor-container.punishment-active .ql-editor,
+.editor-container.punishment-active #editor-wrapper,
+.editor-container.punishment-active #editor {
+    background-color: #ff4444 !important;
+}
+
+/* Nuclear Mode Effects */
+.editor-container.nuclear-mode .ql-editor {
+    border: 2px solid #ff0000;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+.editor-container.nuclear-active {
+    background-color: #ff4444 !important;
+    animation: nuclearPulse 1s infinite alternate;
+    transition: none !important;
+}
+
+.editor-container.nuclear-active .ql-editor,
+.editor-container.nuclear-active #editor-wrapper,
+.editor-container.nuclear-active #editor {
+    background-color: #ff4444 !important;
+    transition: none !important;
+}
+
+@keyframes nuclearPulse {
+    from { background-color: #ff4444; }
+    to { background-color: #ff6666; }
+}

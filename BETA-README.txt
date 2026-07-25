@@ -1,12 +1,13 @@
-Focus Writer Beta - Testing Instructions
+Cadence Writer Beta - Testing Instructions
 =========================================
 
-Thanks for testing Focus Writer! This is a beta version for feedback and testing.
+Thanks for testing Cadence Writer! This is a beta version for feedback and testing.
 
 INSTALLATION:
-1. Download the "Focus Writer 1.0.0-beta.exe" file
-2. Double-click to run it directly (no installation needed)
+1. Download the "Cadence Writer Setup 1.1.0-beta.exe" file
+2. Double-click to run the installer and follow the prompts
 3. Windows may show a security warning - click "More info" then "Run anyway"
+   (the app is unsigned, which is normal for indie software)
 
 WHAT TO TEST:
 - Tutorial flow on first startup
@@ -28,4 +29,4 @@ Focus on:
 - Does progress tracking work correctly?
 - Any crashes or freezing?
 
-Thanks for helping test Focus Writer!
+Thanks for helping test Cadence Writer!

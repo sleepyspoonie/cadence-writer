@@ -2,8 +2,6 @@
 if (!window.visibilityControllerLoaded) {
     window.visibilityControllerLoaded = true;
     
-    const { ipcRenderer } = require('electron');
-
     class VisibilityController {
         constructor() {
             console.log('VisibilityController initialized');
@@ -290,7 +288,7 @@ if (!window.visibilityControllerLoaded) {
         isHomepage() {
             return window.location.pathname.includes('index.html') || 
                    window.location.pathname === '/' ||
-                   document.title === 'Focus Writer';
+                   document.title === 'Cadence Writer';
         }
         
         isEditorPage() {

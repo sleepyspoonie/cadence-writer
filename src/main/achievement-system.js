@@ -1,4 +1,4 @@
-// achievements.js - Achievement System for Focus Writer
+// achievements.js - Achievement System for Cadence Writer
 
 class AchievementSystem {
     constructor() {

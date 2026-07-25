@@ -10,8 +10,7 @@ class AchievementNotifications {
     }
 
     setupIPC() {
-        if (typeof require !== 'undefined') {
-            const { ipcRenderer } = require('electron');
+        if (typeof ipcRenderer !== 'undefined') {
             
             // Listen for achievement unlocks
             ipcRenderer.on('achievements-unlocked', (event, achievements) => {

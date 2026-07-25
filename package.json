@@ -1,6 +1,7 @@
 {
-  "name": "focus-writer",
-  "version": "1.0.0-beta",
+  "name": "cadence-writer",
+  "productName": "Cadence Writer",
+  "version": "1.1.0-beta",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
@@ -19,37 +20,52 @@
     "electron-builder": "^26.0.12"
   },
   "dependencies": {
-    "electron-store": "^10.1.0",
-    "quill": "^2.0.3"
+    "electron-store": "^10.1.0"
   },
   "build": {
-    "appId": "com.focuswriter.app",
-    "productName": "Focus Writer",
+    "appId": "com.cadencewriter.app",
+    "productName": "Cadence Writer",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "assets"
     },
     "files": [
       "**/*",
       "!dist/**/*",
-      "!.git/**/*"
+      "!.git/**/*",
+      "assets/icon.png"
     ],
     "publish": null,
     "win": {
       "target": [
         {
-          "target": "dir",
-          "arch": ["x64"]
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "signAndEditExecutable": false,
-      "verifyUpdateCodeSignature": false
+      "verifyUpdateCodeSignature": false,
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "mac": {
       "target": "dmg",
-      "icon": null
+      "icon": "assets/icon.icns"
     },
     "linux": {
-      "target": "AppImage"
+      "target": "AppImage",
+      "icon": "assets/icon.png"
     }
+  },
+  "allowScripts": {
+    "electron@37.3.1": true,
+    "electron-winstaller@5.4.0": true
   }
 }

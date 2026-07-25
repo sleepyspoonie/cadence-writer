@@ -1,0 +1,224 @@
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            height: 60px !important;
+            padding: 0 2rem !important;
+        }
+        
+        .optionsnav {
+            height: 100%;
+        }
+        
+        .files-container {
+            flex: 1;
+            padding: 3rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--color-text-primary);
+        }
+        
+        .files-controls {
+            background: var(--color-bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        }
+        
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            max-width: 400px;
+        }
+        
+        .search-box input {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            color: var(--color-text-primary);
+            font-size: 0.95rem;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--color-accent);
+        }
+        
+        .sort-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .sort-label {
+            color: var(--color-text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .sort-select {
+            padding: 0.5rem 1rem;
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 6px;
+            color: var(--color-text-primary);
+            cursor: pointer;
+        }
+        
+        .files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .file-card {
+            background: var(--color-bg-secondary);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border: 2px solid transparent;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .file-card:hover {
+            border-color: var(--color-accent);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+        
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--color-accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem;
+            font-size: 1.25rem;
+        }
+        
+        .file-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .file-name input {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-accent);
+            color: var(--color-text-primary);
+            padding: 0.25rem;
+            font-size: 1rem;
+            width: 100%;
+            border-radius: 4px;
+        }
+        
+        .file-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .file-date {
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+        }
+        
+        .file-words {
+            font-size: 0.85rem;
+            color: var(--color-accent);
+        }
+        
+        .file-actions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .file-card:hover .file-actions {
+            opacity: 1;
+        }
+        
+        .action-btn {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .action-btn:hover {
+            background: var(--color-bg-tertiary);
+            color: var(--color-accent);
+            border-color: var(--color-accent);
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 4rem;
+            color: var(--color-text-faint);
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .empty-state p {
+            font-size: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .create-new-btn {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-hover) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .create-new-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(20, 184, 166, 0.4);
+        }

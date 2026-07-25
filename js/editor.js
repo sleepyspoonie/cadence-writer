@@ -1,0 +1,1400 @@
+    
+    // Initialize Quill editor
+    const quill = new Quill('#editor', {
+        theme: 'snow',
+        placeholder: 'Start writing your masterpiece...',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline', 'strike'],
+                ['blockquote', 'code-block'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                [{ 'indent': '-1'}, { 'indent': '+1' }],
+                ['clean']
+            ]
+        }
+    });
+    
+    // Focus mode: fade the header and toolbar while typing; any mouse
+    // movement brings them back.
+    const editorContainer = document.querySelector('.editor-container');
+    quill.on('text-change', (delta, oldDelta, source) => {
+        if (source === 'user' && editorContainer) {
+            editorContainer.classList.add('chrome-faded');
+        }
+    });
+    document.addEventListener('mousemove', () => {
+        if (editorContainer) editorContainer.classList.remove('chrome-faded');
+    });
+
+    // Session variables
+    let sessionMode = 'timer';
+    let sessionGoal = 25;
+    let timerInterval = null;
+    let timeRemaining = 0;
+    let isPaused = false;
+    let currentWordCount = 0;
+    let wordCountGoal = 1000;
+    let initialWordCount = 0;
+    let sessionWordCount = 0;
+    let sessionStarted = false;
+    let manualSaveCount = 0;
+    let settingsReceived = false;
+    let sessionStartTime = Date.now();
+    let pasteDetected = false;
+    
+    // Gamification mode variables
+    let gamificationMode = 'focus';
+    let gamificationSettings = {};
+    let editorSettings = {};
+    let lastTypingTime = Date.now();
+    let inactivityTimer = null;
+    let warningTimer = null;
+    let punishmentAlarm = null;
+    let nuclearTimer = null;
+    let isAppDeletingText = false; // Flag to track when app is deleting text
+    let rewardImages = [];
+    let lastWordCountCheck = 0;
+    let rewardsSent = 0;
+    let consequencesFaced = 0;
+
+    // Load gamification settings
+    function loadGamificationSettings() {
+        ipcRenderer.send('get-settings');
+        ipcRenderer.once('load-settings', (event, settings) => {
+            if (settings && settings.gamificationSettings) {
+                gamificationSettings = settings.gamificationSettings;
+                gamificationMode = gamificationSettings.mode || 'focus';
+                console.log('🔧 Gamification settings loaded:', {
+                    mode: gamificationMode,
+                    rewardWords: gamificationSettings.rewardWords,
+                    rewardWordsWithDefault: gamificationSettings.rewardWords || 100,
+                    allSettings: gamificationSettings
+                });
+            }
+            
+            if (settings && settings.editorSettings) {
+                editorSettings = settings.editorSettings;
+                
+                console.log('Editor settings loaded:', {
+                    mode: gamificationMode,
+                    punishType: gamificationSettings.punishType,
+                    gracePeriod: gamificationSettings.gracePeriod,
+                    hardcoreMode: editorSettings.hardcoreMode,
+                    gamificationSettings: gamificationSettings,
+                    editorSettings: editorSettings
+                });
+                
+                // Apply mode-specific setup
+                setupGameMode();
+                
+                // Apply auto fullscreen if enabled
+                if (editorSettings.autoFullscreen) {
+                    console.log('Auto fullscreen enabled, entering fullscreen mode');
+                    setTimeout(() => {
+                        ipcRenderer.send('set-fullscreen', true);
+                    }, 500); // Small delay to ensure page is fully loaded
+                }
+                
+                // Reward mode uses emoji celebrations only
+            } else {
+                console.log('No gamification settings found');
+            }
+        });
+    }
+    
+    // Setup game mode effects
+    function setupGameMode() {
+        console.log('*** setupGameMode called, isAppDeletingText:', isAppDeletingText);
+        
+        // Safety cleanup: ensure clean state when setting up game mode
+        if (nuclearTimer) {
+            console.log('*** Safety: clearing existing nuclear timer on setup');
+            clearInterval(nuclearTimer);
+            nuclearTimer = null;
+        }
+        isAppDeletingText = false;
+        
+        const container = document.querySelector('.editor-container');
+        
+        // Reset classes
+        container.classList.remove('punishment-mode', 'nuclear-mode', 'punishment-active', 'nuclear-active', 'punishment-warning', 'transitioning');
+        
+        if (gamificationMode === 'punishment') {
+            container.classList.add('punishment-mode');
+            const gracePeriod = gamificationSettings.gracePeriod || 10;
+            container.style.setProperty('--grace-period', gracePeriod + 's');
+            console.log('Punishment mode setup - added punishment-mode class');
+            
+            // Start the punishment timer immediately
+            startPunishmentTimer();
+        } else if (gamificationMode === 'nuclear') {
+            container.classList.add('nuclear-mode');
+            const gracePeriod = gamificationSettings.nuclearGracePeriod || 10;
+            container.style.setProperty('--grace-period', gracePeriod + 's');
+            console.log('Nuclear mode setup - added nuclear-mode class');
+            
+            // Start the nuclear timer immediately
+            startPunishmentTimer();
+        }
+        
+        console.log('Current container classes:', container.className);
+    }
+    
+    // Load reward images from user folder
+    function loadRewardImages() {
+        ipcRenderer.send('get-reward-images');
+        ipcRenderer.once('reward-images-loaded', (event, images) => {
+            rewardImages = images;
+        });
+    }
+    
+    // Show reward popup
+    function showReward() {
+        const popup = document.getElementById('rewardPopup');
+        const imageContainer = document.getElementById('rewardImage');
+        const rewardTitle = popup.querySelector('h3');
+        
+        // Always play the pleasant chiming sound
+        playRewardSound();
+        
+        // Silly and encouraging compliments with matching sub-text
+        const sillyRewards = [
+            {
+                title: "Look at you, absolutely crushing it! 🚀",
+                subtitle: "Houston, we have a word count problem... it's TOO HIGH!",
+                emoji: "🚀"
+            },
+            {
+                title: "Words fear you and rightfully so! ⚔️",
+                subtitle: "They whisper your name in dark dictionaries",
+                emoji: "⚔️"
+            },
+            {
+                title: "You're basically Shakespeare with Wi-Fi! 📜",
+                subtitle: "To write, or not to write? That was never a question for you",
+                emoji: "📜"
+            },
+            {
+                title: "The dictionary is taking notes from YOU! 📚",
+                subtitle: "Webster is frantically updating his definitions",
+                emoji: "📚"
+            },
+            {
+                title: "Your keyboard is having the time of its life! ⌨️",
+                subtitle: "Those keys have never felt so alive",
+                emoji: "⌨️"
+            },
+            {
+                title: "Even Hemingway would be impressed! 🥃",
+                subtitle: "And that guy was pretty hard to impress",
+                emoji: "🥃"
+            },
+            {
+                title: "You magnificent word-wielding wizard! 🧙‍♂️",
+                subtitle: "Your spell: Transformicus Blankpagicus into Masterpiece!",
+                emoji: "🧙‍♂️"
+            },
+            {
+                title: "Your brain is absolutely magnificent! 🧠🔥",
+                subtitle: "Scientists want to study your word-generating neurons",
+                emoji: "🧠"
+            },
+            {
+                title: "You're not writing, you're creating ART! 🎨",
+                subtitle: "The Louvre called, they want to display your sentences",
+                emoji: "🎨"
+            },
+            {
+                title: "The alphabet never looked so good! 🔤",
+                subtitle: "A through Z are blushing at your arrangements",
+                emoji: "🔤"
+            },
+            {
+                title: "You're basically a word ninja! 🥷",
+                subtitle: "Silent but deadly... to writer's block",
+                emoji: "🥷"
+            },
+            {
+                title: "Even autocorrect learns from you! 🤖",
+                subtitle: "It's upgraded itself to 'auto-impressed'",
+                emoji: "🤖"
+            },
+            {
+                title: "Your creativity level: MAXIMUM! 📊",
+                subtitle: "The charts can't even contain your awesomeness",
+                emoji: "📊"
+            },
+            {
+                title: "You're writing circles around everyone! ⭕",
+                subtitle: "They're still trying to figure out where you went",
+                emoji: "⭕"
+            },
+            {
+                title: "Your words could power a small city! ⚡",
+                subtitle: "The mayor is asking for your autograph",
+                emoji: "⚡"
+            },
+            {
+                title: "Plot twist: you're the main character! 📚",
+                subtitle: "And you're absolutely nailing this chapter",
+                emoji: "📚"
+            },
+            {
+                title: "You're not just good, you're LEGENDARY! 🏆",
+                subtitle: "Legends will be told of this writing session",
+                emoji: "🏆"
+            },
+            {
+                title: "You're absolutely unstoppable! 🌪️",
+                subtitle: "Writer's block filed for bankruptcy",
+                emoji: "🌪️"
+            },
+            {
+                title: "Your words have achieved sentience! 🤯",
+                subtitle: "They're writing thank-you notes to your brain",
+                emoji: "🤯"
+            },
+            {
+                title: "You've broken the writing sound barrier! 💥",
+                subtitle: "That sonic boom was your productivity",
+                emoji: "💥"
+            }
+        ];
+        
+        const randomReward = sillyRewards[Math.floor(Math.random() * sillyRewards.length)];
+        
+        // Always use emojis now (no more image mode)
+        imageContainer.innerHTML = randomReward.emoji;
+        rewardTitle.textContent = randomReward.title;
+        
+        // Update the subtitle if it exists
+        let subtitle = popup.querySelector('.reward-subtitle');
+        if (!subtitle) {
+            subtitle = document.createElement('p');
+            subtitle.className = 'reward-subtitle';
+            rewardTitle.parentNode.insertBefore(subtitle, rewardTitle.nextSibling);
+        }
+        subtitle.textContent = randomReward.subtitle;
+        
+        popup.style.display = 'block';
+        rewardsSent++;
+        
+        // Add a subtle glow effect to the popup
+        popup.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--color-accent)';
+        
+        // Hide after 3 seconds with fade out
+        setTimeout(() => {
+            popup.style.transition = 'opacity 0.5s ease-out';
+            popup.style.opacity = '0';
+            setTimeout(() => {
+                popup.style.display = 'none';
+                popup.style.opacity = '1';
+                popup.style.transition = '';
+                popup.style.boxShadow = '0 20px 40px rgba(0, 0, 0, 0.3)';
+            }, 500);
+        }, 2500);
+    }
+    
+    // Play reward sound - create a pleasant chime using Web Audio API
+    function playRewardSound() {
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Create pleasant bell-like chime with multiple harmonics
+            const playNote = (frequency, startTime, duration, volume) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.setValueAtTime(frequency, startTime);
+                oscillator.type = 'sine';
+                
+                // Gentle attack and decay envelope
+                gainNode.gain.setValueAtTime(0, startTime);
+                gainNode.gain.linearRampToValueAtTime(volume, startTime + 0.05);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            };
+            
+            const currentTime = audioContext.currentTime;
+            
+            // Play a pleasant major chord progression (C - E - G - C)
+            playNote(523.25, currentTime, 0.8, 0.3);        // C5
+            playNote(659.25, currentTime + 0.1, 0.8, 0.25);  // E5
+            playNote(783.99, currentTime + 0.2, 0.8, 0.2);   // G5
+            playNote(1046.50, currentTime + 0.3, 1.2, 0.15); // C6
+            
+        } catch (error) {
+            console.log('Web Audio not supported, using fallback');
+            // Fallback to a simple beep
+            const audio = new Audio('data:audio/wav;base64,UklGRi4EAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQoEAAC4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4');
+            audio.volume = 0.3;
+            audio.play().catch(() => {});
+        }
+    }
+    
+    // Start punishment/nuclear consequences
+    function startConsequences() {
+        const container = document.querySelector('.editor-container');
+        
+        if (gamificationMode === 'punishment') {
+            const punishType = gamificationSettings.punishType || 'sound';
+            console.log('Starting punishment consequences with type:', punishType);
+            
+            if (punishType === 'red' || punishType === 'both') {
+                container.classList.add('punishment-active');
+                console.log('Added punishment-active class, container classes:', container.className);
+            }
+            
+            if (punishType === 'sound' || punishType === 'both') {
+                console.log('Starting alarm sound');
+                startAlarm();
+            }
+        } else if (gamificationMode === 'nuclear') {
+            container.classList.add('nuclear-active');
+            
+            // Force the red background styles to ensure they stick
+            container.style.setProperty('background-color', '#ff4444', 'important');
+            container.style.setProperty('transition', 'none', 'important');
+            container.querySelector('.ql-editor').style.setProperty('background-color', '#ff4444', 'important');
+            container.querySelector('.ql-editor').style.setProperty('transition', 'none', 'important');
+            container.querySelector('#editor-wrapper').style.setProperty('background-color', '#ff4444', 'important');
+            container.querySelector('#editor-wrapper').style.setProperty('transition', 'none', 'important');
+            container.querySelector('#editor').style.setProperty('background-color', '#ff4444', 'important');
+            container.querySelector('#editor').style.setProperty('transition', 'none', 'important');
+            
+            startAlarm();
+            startTextDeletion();
+        }
+        
+        consequencesFaced++;
+    }
+    
+    // Stop punishment consequences
+    function stopConsequences() {
+        const container = document.querySelector('.editor-container');
+        
+        // Set 2-second transition for fading out red
+        container.style.transition = 'background-color 2s ease-out';
+        container.querySelector('.ql-editor').style.transition = 'background-color 2s ease-out';
+        container.querySelector('#editor-wrapper').style.transition = 'background-color 2s ease-out';
+        container.querySelector('#editor').style.transition = 'background-color 2s ease-out';
+        
+        container.classList.remove('punishment-active', 'punishment-warning', 'transitioning');
+        stopAlarm();
+        
+        // Reset transitions after fade completes
+        setTimeout(() => {
+            container.style.transition = '';
+            container.querySelector('.ql-editor').style.transition = '';
+            container.querySelector('#editor-wrapper').style.transition = '';
+            container.querySelector('#editor').style.transition = '';
+        }, 2000);
+    }
+    
+    // Start alarm sound
+    function startAlarm() {
+        const alarm = document.getElementById('punishmentAlarm');
+        if (alarm) {
+            alarm.currentTime = 0;
+            alarm.play().catch(() => {});
+        }
+    }
+    
+    // Stop alarm sound
+    function stopAlarm() {
+        const alarm = document.getElementById('punishmentAlarm');
+        if (alarm) {
+            alarm.pause();
+            alarm.currentTime = 0;
+        }
+    }
+    
+    // Start text deletion for nuclear mode
+    function startTextDeletion() {
+        if (nuclearTimer) return; // Already running
+        
+        const deletionSpeed = gamificationSettings.deletionSpeed || 5;
+        const intervalTime = 1000 / deletionSpeed; // Characters per second converted to interval
+        
+        isAppDeletingText = true; // Mark that app is deleting text
+        console.log('*** startTextDeletion: isAppDeletingText set to true, deletionSpeed:', deletionSpeed, 'intervalTime:', intervalTime);
+        
+        nuclearTimer = setInterval(() => {
+            const text = quill.getText();
+            if (text.length > 1) { // Keep at least one character
+                const selection = quill.getSelection();
+                const cursorPos = selection ? selection.index : text.length - 1;
+                
+                // Delete character at or before cursor position
+                const deletePos = Math.max(0, cursorPos - 1);
+                
+                console.log('*** Deleting character at position', deletePos, 'isAppDeletingText:', isAppDeletingText);
+                
+                // Use 'api' source to indicate this is programmatic deletion
+                quill.deleteText(deletePos, 1, 'api');
+                
+                // Move cursor back if needed
+                if (selection) {
+                    quill.setSelection(Math.max(0, selection.index - 1));
+                }
+            }
+        }, intervalTime);
+    }
+    
+    // Stop text deletion
+    function stopTextDeletion() {
+        console.log('*** stopTextDeletion called, clearing timer and flag');
+        if (nuclearTimer) {
+            clearInterval(nuclearTimer);
+            nuclearTimer = null;
+        }
+        isAppDeletingText = false; // Clear the flag when deletion stops
+        console.log('*** stopTextDeletion: isAppDeletingText set to false, nuclearTimer cleared');
+        
+        // Extra safety: Force clear the flag after a delay in case of race conditions
+        setTimeout(() => {
+            if (isAppDeletingText) {
+                console.log('*** Safety cleanup: forcing isAppDeletingText to false');
+                isAppDeletingText = false;
+            }
+        }, 1000);
+    }
+    
+    // Stop nuclear consequences (separate from stopConsequences to handle screen color properly)
+    function stopNuclearConsequences() {
+        console.log('*** stopNuclearConsequences called, isAppDeletingText:', isAppDeletingText);
+        const container = document.querySelector('.editor-container');
+        
+        // First, clear the forced inline styles that were preventing transitions
+        container.style.removeProperty('background-color');
+        container.style.removeProperty('transition');
+        container.querySelector('.ql-editor').style.removeProperty('background-color');
+        container.querySelector('.ql-editor').style.removeProperty('transition');
+        container.querySelector('#editor-wrapper').style.removeProperty('background-color');
+        container.querySelector('#editor-wrapper').style.removeProperty('transition');
+        container.querySelector('#editor').style.removeProperty('background-color');
+        container.querySelector('#editor').style.removeProperty('transition');
+        
+        // Set 2-second transition for fading out red
+        container.style.transition = 'background-color 2s ease-out';
+        container.querySelector('.ql-editor').style.transition = 'background-color 2s ease-out';
+        container.querySelector('#editor-wrapper').style.transition = 'background-color 2s ease-out';
+        container.querySelector('#editor').style.transition = 'background-color 2s ease-out';
+        
+        container.classList.remove('nuclear-active', 'punishment-warning', 'transitioning');
+        stopAlarm(); // Stop the alarm sound
+        stopTextDeletion();
+        
+        // Reset transitions after fade completes
+        setTimeout(() => {
+            container.style.transition = '';
+            container.querySelector('.ql-editor').style.transition = '';
+            container.querySelector('#editor-wrapper').style.transition = '';
+            container.querySelector('#editor').style.transition = '';
+        }, 2000);
+    }
+    
+    // Handle typing activity
+    function onTypingActivity() {
+        console.log('*** onTypingActivity triggered, isAppDeletingText:', isAppDeletingText, 'gamificationMode:', gamificationMode);
+        lastTypingTime = Date.now();
+        
+        // Skip gamification in freewrite mode
+        if (sessionMode === 'freewrite') {
+            return;
+        }
+        
+        // Stop any active consequences and warning states
+        if (gamificationMode === 'punishment') {
+            const container = document.querySelector('.editor-container');
+            
+            // Clear any warning state immediately when user starts typing
+            if (container.classList.contains('punishment-warning') || container.classList.contains('transitioning')) {
+                container.classList.remove('punishment-warning', 'transitioning');
+            }
+            
+            stopConsequences();
+        } else if (gamificationMode === 'nuclear') {
+            const container = document.querySelector('.editor-container');
+            
+            // Clear any warning state immediately when user starts typing
+            if (container.classList.contains('punishment-warning') || container.classList.contains('transitioning')) {
+                container.classList.remove('punishment-warning', 'transitioning');
+            }
+            
+            // Only stop nuclear consequences if deletion is not active
+            if (!nuclearTimer) {
+                console.log('*** User typing, no deletion active, stopping nuclear consequences');
+                stopNuclearConsequences();
+            } else {
+                console.log('*** User typing but deletion still active, scheduling deletion stop');
+                // Stop alarm immediately but keep red screen
+                stopAlarm();
+                
+                // Schedule deletion stop after a short delay to allow red screen to stay during active deletion
+                setTimeout(() => {
+                    console.log('*** Delayed stop: checking if deletion should stop');
+                    if (nuclearTimer) {
+                        console.log('*** Stopping text deletion after user input delay');
+                        stopTextDeletion();
+                        
+                        // After stopping deletion, stop nuclear consequences
+                        setTimeout(() => {
+                            console.log('*** Stopping nuclear consequences after deletion stopped');
+                            stopNuclearConsequences();
+                        }, 100);
+                    }
+                }, 500); // Keep red screen for 0.5 seconds after user starts typing
+            }
+        }
+        
+        // Reset inactivity timer
+        resetInactivityTimer();
+        
+        // Check for rewards
+        checkForRewards();
+    }
+    
+    // Reset inactivity timer (for when user starts typing again)
+    function resetInactivityTimer() {
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+        }
+        if (warningTimer) {
+            clearTimeout(warningTimer);
+        }
+        
+        // Text deletion is now stopped directly in keyboard event handlers
+        
+        if (gamificationMode === 'punishment' || gamificationMode === 'nuclear') {
+            const gracePeriod = (gamificationMode === 'nuclear' ? 
+                gamificationSettings.nuclearGracePeriod : 
+                gamificationSettings.gracePeriod);
+            // Built-in 10-second grace period PLUS user's configured grace period
+            const builtInGracePeriod = 10; // Always 10 seconds built-in safety
+            const userGracePeriod = gracePeriod !== undefined ? gracePeriod : 0;
+            const totalTime = builtInGracePeriod + userGracePeriod;
+            const container = document.querySelector('.editor-container');
+            
+            console.log(`Resetting ${gamificationMode} timer: ${totalTime}s total (${builtInGracePeriod}s built-in + ${userGracePeriod}s user setting)`);
+            
+            // Set the grace period as a CSS variable for the transition
+            container.style.setProperty('--user-grace-period', totalTime + 's');
+            
+            // Start consequences after grace period
+            inactivityTimer = setTimeout(() => {
+                console.log(`${gamificationMode} consequences triggered after ${totalTime}s grace period`);
+                container.classList.remove('punishment-warning', 'transitioning');
+                
+                // Clear any lingering transition styles that might interfere with nuclear mode
+                if (gamificationMode === 'nuclear') {
+                    container.style.transition = '';
+                    container.querySelector('.ql-editor').style.transition = '';
+                    container.querySelector('#editor-wrapper').style.transition = '';
+                    container.querySelector('#editor').style.transition = '';
+                }
+                
+                startConsequences();
+            }, totalTime * 1000);
+        }
+    }
+    
+    // Start punishment timer immediately (for immediate activation on document load)
+    function startPunishmentTimer() {
+        const container = document.querySelector('.editor-container');
+        
+        if (gamificationMode === 'punishment' || gamificationMode === 'nuclear') {
+            const gracePeriod = (gamificationMode === 'nuclear' ? 
+                gamificationSettings.nuclearGracePeriod : 
+                gamificationSettings.gracePeriod);
+            // Built-in 10-second grace period PLUS user's configured grace period
+            const builtInGracePeriod = 10; // Always 10 seconds built-in safety
+            const userGracePeriod = gracePeriod !== undefined ? gracePeriod : 0;
+            const totalTime = builtInGracePeriod + userGracePeriod;
+            
+            console.log(`Starting immediate ${gamificationMode} timer: ${totalTime}s total (${builtInGracePeriod}s built-in + ${userGracePeriod}s user setting)`);
+            
+            // Set the grace period as a CSS variable for the transition
+            container.style.setProperty('--user-grace-period', totalTime + 's');
+            
+            // Start consequences immediately after grace period
+            inactivityTimer = setTimeout(() => {
+                console.log(`${gamificationMode} consequences triggered after ${totalTime}s grace period`);
+                container.classList.remove('punishment-warning', 'transitioning');
+                startConsequences();
+            }, totalTime * 1000);
+        }
+    }
+    
+    // Check for rewards
+    function checkForRewards() {
+        if (gamificationMode !== 'reward') return;
+        
+        const currentWords = sessionWordCount; // Use session words instead of total document words
+        const wordsPerReward = gamificationSettings.rewardWords || 100;
+        const rewardsEarned = Math.floor(currentWords / wordsPerReward);
+        
+        // Track previous session words, not total document words
+        const previousSessionWords = Math.max(0, lastWordCountCheck - initialWordCount);
+        const previousRewards = Math.floor(previousSessionWords / wordsPerReward);
+        
+        console.log(`🔍 Reward check: mode=${gamificationMode}, sessionWords=${currentWords}, wordsPerReward=${wordsPerReward}, rewardsEarned=${rewardsEarned}, previousSessionWords=${previousSessionWords}, previousRewards=${previousRewards}, lastWordCountCheck=${lastWordCountCheck}, initialWordCount=${initialWordCount}`);
+        
+        if (rewardsEarned > previousRewards) {
+            console.log(`🎉 Reward triggered! Session words: ${currentWords}, Milestone: ${rewardsEarned * wordsPerReward}`);
+            showReward();
+        }
+        
+        lastWordCountCheck = currentWordCount; // Still track total for comparison
+    }
+    
+    // Hardcore mode prevention
+    function preventHardcoreActions(event) {
+        if (!editorSettings.hardcoreMode || sessionMode === 'freewrite') return false;
+        
+        const isCopy = (event.ctrlKey || event.metaKey) && event.key === 'c';
+        const isPaste = (event.ctrlKey || event.metaKey) && event.key === 'v';
+        const isBackspace = event.key === 'Backspace';
+        const isDelete = event.key === 'Delete';
+        const isUndo = (event.ctrlKey || event.metaKey) && event.key === 'z';
+        const isSelectAll = (event.ctrlKey || event.metaKey) && event.key === 'a';
+        const isCut = (event.ctrlKey || event.metaKey) && event.key === 'x';
+        const isArrowWithShift = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key) && event.shiftKey;
+        
+        if (isCopy || isPaste || isBackspace || isDelete || isUndo || isSelectAll || isCut || isArrowWithShift) {
+            event.preventDefault();
+            event.stopPropagation();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Disable gamification modes for freewrite sessions
+    function disableGamificationModes() {
+        console.log('*** disableGamificationModes called');
+        // Stop any active consequences
+        stopConsequences();
+        stopNuclearConsequences();
+        
+        // Clear any active timers
+        if (inactivityTimer) {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = null;
+        }
+        
+        // Reset visual states
+        const container = document.querySelector('.editor-container');
+        container.classList.remove('punishment-mode', 'nuclear-mode', 'punishment-active', 'nuclear-active', 'punishment-warning', 'transitioning');
+        
+        console.log('Gamification modes disabled for freewrite session');
+    }
+
+    // Apply custom editor settings (font size and family)
+    function applyCustomEditorSettings() {
+        ipcRenderer.send('get-settings');
+        
+        ipcRenderer.once('load-settings', (event, settings) => {
+            if (settings && settings.editorSettings) {
+                const { fontSize, fontFamily } = settings.editorSettings;
+                
+                // Try to apply immediately
+                const attemptApply = () => {
+                    const editorElement = document.querySelector('.ql-editor');
+                    
+                    if (editorElement) {
+                        if (fontSize) {
+                            editorElement.style.fontSize = `${fontSize}px`;
+                            editorElement.style.lineHeight = '1.8';
+                        }
+                        
+                        if (fontFamily) {
+                            const fontMap = {
+                                'Georgia': 'Georgia, serif',
+                                'Arial': 'Arial, sans-serif',
+                                'Times New Roman': '"Times New Roman", Times, serif',
+                                'Helvetica': 'Helvetica, Arial, sans-serif',
+                                'Courier New': '"Courier New", Courier, monospace'
+                            };
+                            
+                            const fontValue = fontMap[fontFamily] || fontFamily;
+                            editorElement.style.fontFamily = fontValue;
+                        }
+                        return true;
+                    }
+                    return false;
+                };
+                
+                // Try immediately
+                if (!attemptApply()) {
+                    // If not ready, use MutationObserver to apply as soon as element exists
+                    const observer = new MutationObserver(() => {
+                        if (attemptApply()) {
+                            observer.disconnect();
+                        }
+                    });
+                    
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            }
+        });
+    }
+
+    // Call it immediately after Quill initialization
+    applyCustomEditorSettings();
+    
+    // Initialize gamification system
+    loadGamificationSettings();
+
+    // Report session completion
+    function reportSessionComplete(outcome = 'incomplete') {
+        const text = quill.getText();
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0).length;
+        
+        const sessionEndTime = Date.now();
+        const timeSpentMinutes = Math.round((sessionEndTime - sessionStartTime) / 60000);
+        
+        console.log('Session time:', timeSpentMinutes, 'minutes');
+        
+        // Determine if session was successful (only for wordcount/timer modes, never freewrite)
+        let successful = false;
+        if (sessionMode !== 'freewrite' && outcome === 'completed') {
+            if (sessionMode === 'wordcount') {
+                successful = sessionWordCount >= wordCountGoal;
+            } else if (sessionMode === 'timer') {
+                successful = timeRemaining === 0; // Timer completed fully
+            }
+        }
+        
+        // Determine if it's a ragequit (only for incomplete wordcount/timer modes, never freewrite)
+        let isRagequit = false;
+        if (sessionMode !== 'freewrite' && outcome === 'ragequit') {
+            if (sessionMode === 'wordcount') {
+                isRagequit = sessionWordCount < wordCountGoal;
+            } else if (sessionMode === 'timer') {
+                isRagequit = timeRemaining > 0;
+            }
+        }
+        
+        console.log('*** SENDING SESSION COMPLETION DATA ***');
+        console.log('Session completion data:', {
+            totalWords: words,
+            newWords: sessionWordCount,
+            mode: sessionMode,
+            timeSpent: timeSpentMinutes,
+            successful: successful,
+            ragequit: isRagequit
+        });
+        ipcRenderer.send('session-completed', {
+            totalWords: words,
+            newWords: sessionWordCount, // Words written in this session
+            mode: sessionMode,
+            duration: sessionMode === 'timer' ? sessionGoal * 60 - timeRemaining : 0,
+            timeSpent: timeSpentMinutes,
+            successful: successful,
+            ragequit: isRagequit,
+            targetWords: sessionMode === 'wordcount' ? wordCountGoal : null,
+            targetTime: sessionMode === 'timer' ? sessionGoal : null,
+            pasteDetected: pasteDetected,
+            sessionStartTime: sessionStartTime,
+            sessionEndTime: sessionEndTime,
+            manualSaves: manualSaveCount,
+            gamificationMode: gamificationMode,
+            rewardsSent: rewardsSent,
+            consequencesFaced: consequencesFaced
+        });
+    }
+
+    // Get session settings from main process
+    ipcRenderer.on('session-settings', (event, settings) => {
+        console.log('Session settings received:', settings);
+        sessionMode = settings.mode;
+        sessionGoal = settings.goal;
+        settingsReceived = true;
+        
+        if (sessionMode === 'freewrite') {
+            document.getElementById('sessionMode').textContent = 'Freewrite Mode';
+            document.getElementById('progressLabel').textContent = 'Session:';
+            document.getElementById('progressValue').textContent = 'No limit';
+
+            // Ensure exit button is visible in freewrite mode
+            const exitBtn = document.getElementById('exitBtn');
+            if (exitBtn) {
+                exitBtn.style.display = 'block';
+            }
+            
+            // Disable gamification modes in freewrite
+            disableGamificationModes();
+        } else if (sessionMode === 'timer') {
+            document.getElementById('sessionMode').textContent = 'Timer Mode';
+            document.getElementById('progressLabel').textContent = 'Time Remaining:';
+            timeRemaining = sessionGoal * 60;
+            updateTimerDisplay();
+            setTimeout(() => {
+                console.log('Starting timer with', timeRemaining, 'seconds');
+                startTimer();
+            }, 100);
+        } else {
+            document.getElementById('sessionMode').textContent = 'Word Count Mode';
+            document.getElementById('progressLabel').textContent = 'Goal:';
+            document.getElementById('progressValue').textContent = `${sessionGoal} words`;
+            wordCountGoal = sessionGoal;
+        }
+    });
+
+    // Request session settings
+    ipcRenderer.send('get-session-settings');
+
+    // Load existing file content
+    setTimeout(() => {
+        ipcRenderer.send('get-current-file');
+    }, 100);
+
+    ipcRenderer.on('current-file-info', (event, fileInfo) => {
+    if (fileInfo && fileInfo.content) {
+        console.log('Loading file:', fileInfo.name);
+        
+        // Wait a moment for Quill to be fully ready, then load content
+        setTimeout(() => {
+        quill.setContents(fileInfo.content);
+        quill.focus(); // Re-focus the editor after loading content
+
+        // Debug editor state
+        console.log('Editor debugging:', {
+            isEnabled: quill.isEnabled(),
+            hasFocus: quill.hasFocus(),
+            editorElement: document.querySelector('.ql-editor'),
+            containerElement: document.querySelector('#editor')
+        });
+        
+        // Calculate initial word count AFTER content is loaded
+        const text = quill.getText();
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+        initialWordCount = words.length;
+        lastWordCountCheck = initialWordCount; // Initialize reward tracking from existing word count
+        console.log('Starting with existing', initialWordCount, 'words in document');
+        
+        // Update the word count display to show 0 for session words
+        document.getElementById('wordCount').textContent = '0';
+        
+        // Send session-started with the correct initial word count
+        ipcRenderer.send('session-started', { 
+            initialWords: initialWordCount 
+        });
+        }, 100);
+    } else {
+        // For new documents, send session-started immediately with 0 words
+        ipcRenderer.send('session-started', { 
+            initialWords: 0 
+        });
+    }
+    
+    setTimeout(() => {
+        sessionStarted = true;
+        pasteDetected = false;
+        console.log('Session started, goal checking enabled');
+        console.log('Current mode:', sessionMode, 'Goal:', sessionGoal);
+    }, 500);
+    });
+
+    // Start session if no file to load
+    setTimeout(() => {
+        if (!sessionStarted) {
+            sessionStarted = true;
+            pasteDetected = false;
+            console.log('Session started (new document), goal checking enabled');
+        }
+    }, 1500);
+
+    // Word count tracking
+    quill.on('text-change', function(delta, oldDelta, source) {
+        console.log('*** text-change event: source =', source, 'isAppDeletingText =', isAppDeletingText);
+        if (source !== 'user') return;
+        if (isAppDeletingText) {
+            console.log('*** text-change ignored due to isAppDeletingText flag');
+            return; // Ignore changes when app is deleting text
+        }
+        
+        const text = quill.getText();
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+        const totalWords = words.length;
+        
+        sessionWordCount = Math.max(0, totalWords - initialWordCount);
+        currentWordCount = totalWords;
+        
+        document.getElementById('wordCount').textContent = sessionWordCount;
+        
+        // Handle gamification modes on text change
+        onTypingActivity();
+        
+        if (sessionStarted && sessionMode === 'wordcount' && sessionWordCount >= wordCountGoal && !isPaused) {
+            showSuccessModal();
+        }
+        
+        clearTimeout(window.autoSaveTimeout);
+        window.autoSaveTimeout = setTimeout(() => {
+            autoSave();
+        }, 5000);
+        
+        // Check for paste operations (detect large text insertions)
+        if (delta && delta.ops) {
+            delta.ops.forEach(op => {
+                if (op.insert && typeof op.insert === 'string' && op.insert.length > 50) {
+                    pasteDetected = true;
+                    console.log('Paste operation detected');
+                }
+            });
+        }
+        
+        // Reset idle timer when user types
+        resetIdleTimer();
+    });
+    
+    // Additional paste detection via clipboard event
+    document.addEventListener('paste', function(e) {
+        if (document.activeElement && document.activeElement.closest('.ql-editor')) {
+            pasteDetected = true;
+            console.log('Paste event detected');
+        }
+    });
+    
+    // Keyboard event listeners for gamification modes
+    document.addEventListener('keydown', function(e) {
+        // Handle hardcore mode restrictions
+        if (preventHardcoreActions(e)) {
+            console.log('*** Hardcore mode blocked key:', e.key, 'hardcoreMode:', editorSettings.hardcoreMode, 'sessionMode:', sessionMode);
+            return;
+        }
+        
+        // Track typing activity for punishment/nuclear modes
+        if (e.target.closest('.ql-editor')) {
+            if (isAppDeletingText) {
+                console.log('*** keydown detected during app deletion, will stop deletion after delay');
+                // Don't stop deletion immediately - let onTypingActivity handle it
+            }
+            console.log('*** keydown detected, calling onTypingActivity');
+            onTypingActivity();
+        }
+    });
+
+    // Mouse events for hardcore mode (prevent text selection)
+    document.addEventListener('mousedown', function(e) {
+        if (editorSettings.hardcoreMode && sessionMode !== 'freewrite' && e.target.closest('.ql-editor')) {
+            // Allow single clicks for cursor positioning, but prevent dragging for selection
+            let startX = e.clientX;
+            let startY = e.clientY;
+            
+            const handleMouseMove = (moveEvent) => {
+                // If mouse has moved significantly, it's a drag for selection - prevent it
+                const deltaX = Math.abs(moveEvent.clientX - startX);
+                const deltaY = Math.abs(moveEvent.clientY - startY);
+                if (deltaX > 3 || deltaY > 3) {
+                    moveEvent.preventDefault();
+                    moveEvent.stopPropagation();
+                }
+            };
+            
+            const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+            
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+    });
+
+    // Prevent selection-related context menu in hardcore mode
+    document.addEventListener('contextmenu', function(e) {
+        if (editorSettings.hardcoreMode && sessionMode !== 'freewrite' && e.target.closest('.ql-editor')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    // Prevent selectstart event in hardcore mode
+    document.addEventListener('selectstart', function(e) {
+        if (editorSettings.hardcoreMode && sessionMode !== 'freewrite' && e.target.closest('.ql-editor')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    document.addEventListener('keyup', function(e) {
+        // Additional typing activity tracking
+        if (e.target.closest('.ql-editor')) {
+            if (isAppDeletingText) {
+                console.log('*** keyup detected during app deletion, will stop deletion after delay');
+                // Don't stop deletion immediately - let onTypingActivity handle it
+            }
+            console.log('*** keyup detected, calling onTypingActivity');
+            onTypingActivity();
+        }
+    });
+    
+    // Idle time tracking
+    let idleCheckInterval;
+    let lastActivityTime = Date.now();
+    let silentTreatmentTriggered = false;
+    
+    function resetIdleTimer() {
+        lastActivityTime = Date.now();
+    }
+    
+    function startIdleTracking() {
+        // Check every 30 seconds for idle state
+        idleCheckInterval = setInterval(() => {
+            const now = Date.now();
+            const timeSinceActivity = now - lastActivityTime;
+            const minutesIdle = timeSinceActivity / (60 * 1000);
+            
+            // Check for Silent Treatment achievement (10+ minutes idle)
+            if (minutesIdle >= 10 && !silentTreatmentTriggered) {
+                console.log(`Silent Treatment achieved: ${minutesIdle.toFixed(1)} minutes idle`);
+                checkSilentTreatmentAchievement();
+                silentTreatmentTriggered = true;
+            }
+        }, 30000); // Check every 30 seconds
+    }
+    
+    function checkSilentTreatmentAchievement() {
+        // Only trigger if we haven't written anything significant
+        const text = quill.getText().trim();
+        const wordCount = text.split(/\s+/).filter(word => word.length > 0).length;
+        
+        if (wordCount <= 5) { // Very minimal writing
+            const minutesIdle = (Date.now() - lastActivityTime) / (60 * 1000);
+            ipcRenderer.send('silent-treatment-achieved', {
+                idleMinutes: minutesIdle,
+                textLength: text.length,
+                wordCount: wordCount
+            });
+        }
+    }
+    
+    // Start idle tracking when editor loads
+    startIdleTracking();
+    
+    // Timer functions
+    function startTimer() {
+        if (sessionMode !== 'timer') return;
+        
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        
+        if (!isPaused && timeRemaining > 0) {
+            timerInterval = setInterval(() => {
+                if (timeRemaining > 0 && !isPaused) {
+                    timeRemaining--;
+                    updateTimerDisplay();
+                    
+                    if (timeRemaining === 0) {
+                        clearInterval(timerInterval);
+                        showSuccessModal();
+                    }
+                }
+            }, 1000);
+        }
+    }
+    
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        document.getElementById('progressValue').textContent = 
+            `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    
+    function pauseTimer() {
+        isPaused = !isPaused;
+        const pauseBtn = document.getElementById('pauseBtn');
+        
+        if (isPaused) {
+            clearInterval(timerInterval);
+            pauseBtn.textContent = 'Resume';
+            pauseBtn.classList.add('active');
+        } else {
+            startTimer();
+            pauseBtn.textContent = 'Pause';
+            pauseBtn.classList.remove('active');
+        }
+    }
+    
+    function showSuccessModal() {
+        console.log('*** SUCCESS MODAL TRIGGERED ***');
+        console.log('Session mode:', sessionMode, 'Goal reached');
+        
+        isPaused = true;
+        clearInterval(timerInterval);
+        
+        const message = sessionMode === 'timer' 
+            ? `You've completed your ${sessionGoal} minute writing session!`
+            : `You've reached your goal of ${wordCountGoal} words!`;
+        
+        console.log('Success message:', message);
+        
+        document.getElementById('successMessage').textContent = message;
+        document.getElementById('overlay').classList.add('show');
+        document.getElementById('successModal').classList.add('show');
+        
+        console.log('Success modal should now be visible');
+        autoSave();
+    }
+    
+    function autoSave() {
+        const content = quill.getContents();
+        const text = quill.getText();
+        
+        if (text.trim().length === 0) return;
+        
+        // Convert Delta to RTF-formatted text
+        const rtfText = convertDeltaToRTFText(content);
+        
+        console.log('Auto-saving...', text.length, 'characters');
+        
+        ipcRenderer.send('auto-save', {
+            content: content,
+            text: rtfText,  // Send RTF-formatted text instead of plain text
+            wordCount: currentWordCount
+        });
+    }
+
+    function convertDeltaToRTFText(delta) {
+        let result = '';
+        
+        if (delta && delta.ops) {
+            delta.ops.forEach(op => {
+                if (typeof op.insert === 'string') {
+                    let text = op.insert;
+                    
+                    // Apply RTF formatting codes
+                    if (op.attributes) {
+                        if (op.attributes.bold) text = `\\b ${text}\\b0`;
+                        if (op.attributes.italic) text = `\\i ${text}\\i0`;
+                        if (op.attributes.underline) text = `\\ul ${text}\\ul0`;
+                        if (op.attributes.script === 'sub') text = `\\sub ${text}\\nosupersub`;
+                        if (op.attributes.script === 'super') text = `\\super ${text}\\nosupersub`;
+                        if (op.attributes.strike) text = `\\strike ${text}\\strike0`;
+                        if (op.attributes.header === 1) text = `\\fs48 ${text}\\fs24`;
+                        if (op.attributes.header === 2) text = `\\fs36 ${text}\\fs24`;
+                        if (op.attributes.header === 3) text = `\\fs28 ${text}\\fs24`;
+                        if (op.attributes.blockquote) text = `\\ql\\li720 ${text}\\li0`;
+                        if (op.attributes['code-block']) text = `\\f1 ${text}\\f0`;
+                        if (op.attributes.list === 'ordered') text = `\\pntext\\tab ${text}`;
+                        if (op.attributes.list === 'bullet') text = `\\pntext\\bullet\\tab ${text}`;
+                        if (op.attributes.indent) {
+                            const indentLevel = op.attributes.indent * 720;
+                            text = `\\li${indentLevel} ${text}\\li0`;
+                        }
+                    }
+                    
+                    result += text;
+                }
+            });
+        }
+        
+        return result;
+    }
+    
+    // Button handlers
+    document.getElementById('pauseBtn').addEventListener('click', pauseTimer);
+    
+    document.getElementById('saveBtn').addEventListener('click', () => {
+        const text = quill.getText();
+        if (text.trim().length > 0) {
+            manualSaveCount++;
+            console.log('Manual save #' + manualSaveCount);
+            
+            ipcRenderer.send('manual-save', {
+                content: quill.getContents(),
+                text: text,
+                wordCount: currentWordCount,
+                manualSaveCount: manualSaveCount
+            });
+            
+            const saveBtn = document.getElementById('saveBtn');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = 'Saved!';
+            saveBtn.classList.add('active');
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.classList.remove('active');
+            }, 2000);
+        }
+    });
+    
+    document.getElementById('exitBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to exit? Your work will be saved.')) {
+            autoSave();
+            // Determine if this is a ragequit or normal exit
+            const outcome = (sessionMode !== 'freewrite' && sessionStarted) ? 'ragequit' : 'incomplete';
+            console.log('*** EXIT SESSION CLICKED - calling reportSessionComplete with:', outcome);
+            reportSessionComplete(outcome);
+            setTimeout(() => {
+                ipcRenderer.send('exit-to-home');
+            }, 500);
+        }
+    });
+    
+    // Modal button handlers
+    document.getElementById('newSessionBtn').addEventListener('click', () => {
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('successModal').classList.remove('show');
+        
+        isPaused = false;
+        
+        // Switch to freewrite mode
+        sessionMode = 'freewrite';
+        document.getElementById('sessionMode').textContent = 'Freewrite Mode';
+        
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        
+        document.getElementById('progressLabel').textContent = 'Session:';
+        document.getElementById('progressValue').textContent = 'No limit';
+        wordCountGoal = Infinity;
+        
+        // Show exit button in freewrite mode
+        const exitBtn = document.getElementById('exitBtn');
+        if (exitBtn) {
+            exitBtn.style.display = 'block';
+        }
+        
+        // Disable gamification modes in freewrite
+        disableGamificationModes();
+    });
+    
+    document.getElementById('startNewSprintBtn').addEventListener('click', () => {
+        // First, report the current successful session
+        console.log('*** START NEW SPRINT CLICKED - calling reportSessionComplete with: completed');
+        reportSessionComplete('completed');
+        
+        // Reset for new sprint with same goal
+        document.getElementById('overlay').classList.remove('show');
+        document.getElementById('successModal').classList.remove('show');
+        
+        isPaused = false;
+        sessionStarted = true;
+        sessionReported = false;
+        
+        // Reset counters for new sprint
+        if (sessionMode === 'wordcount') {
+            initialWordCount = quill.getText().trim().split(/\s+/).filter(word => word.length > 0).length;
+            lastWordCountCheck = initialWordCount; // Reset reward tracking for new sprint
+            sessionWordCount = 0;
+            document.getElementById('wordCount').textContent = '0';
+        } else if (sessionMode === 'timer') {
+            timeRemaining = sessionGoal * 60;
+            updateTimerDisplay();
+            startTimer();
+        }
+        
+        // Reset session start time for new sprint
+        sessionStartTime = Date.now();
+        pasteDetected = false;
+        
+        console.log('New sprint started with same goal');
+    });
+    
+    console.log('Setting up finish button handler...');
+    const finishBtn = document.getElementById('finishBtn');
+    console.log('finishBtn element:', finishBtn);
+    
+    if (finishBtn) {
+        finishBtn.addEventListener('click', () => {
+            autoSave();
+            // This is called from success modal, so session was successful
+            console.log('*** FINISH BUTTON CLICKED - calling reportSessionComplete with: completed');
+            ipcRenderer.send('debug-message', '*** FINISH BUTTON CLICKED ***');
+            reportSessionComplete('completed');
+            setTimeout(() => {
+                ipcRenderer.send('exit-to-home');
+            }, 500);
+        });
+        
+        // Add a secondary click handler as a test
+        finishBtn.onclick = function() {
+            console.log('*** FINISH BUTTON ONCLICK FIRED ***');
+            ipcRenderer.send('debug-message', '*** FINISH BUTTON ONCLICK FIRED ***');
+        };
+        
+        console.log('Finish button event handlers attached successfully');
+    } else {
+        console.error('FINISH BUTTON NOT FOUND! Cannot attach event handler');
+    }
+    
+    // Save when window loses focus
+    window.addEventListener('blur', () => {
+        autoSave();
+    });
+    
+    // Save before unload
+    window.addEventListener('beforeunload', (e) => {
+        autoSave();
+    });
+
+    // Fullscreen toggle
+    document.getElementById('fullscreenToggle').addEventListener('click', () => {
+        ipcRenderer.send('toggle-fullscreen');
+    });
+
+    ipcRenderer.on('fullscreen-changed', (event, isFullscreen) => {
+        const btn = document.getElementById('fullscreenToggle');
+        if (isFullscreen) {
+            btn.title = 'Exit Fullscreen';
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+                </svg>`;
+        } else {
+            btn.title = 'Enter Fullscreen';
+            btn.innerHTML = `
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+                </svg>`;
+        }
+    });
+    
+    // Debug: Watch for nuclear-active class changes
+    const container = document.querySelector('.editor-container');
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                const hasNuclearActive = container.classList.contains('nuclear-active');
+                console.log('*** Class change detected. nuclear-active:', hasNuclearActive, 'isAppDeletingText:', isAppDeletingText);
+                
+                // Always show stack trace when nuclear-active changes
+                if (hasNuclearActive) {
+                    console.log('*** nuclear-active was ADDED. Stack trace:');
+                    console.trace();
+                } else if (!hasNuclearActive) {
+                    console.log('*** nuclear-active was REMOVED. Stack trace:');
+                    console.trace();
+                }
+            }
+        });
+    });
+    observer.observe(container, { attributes: true, attributeFilter: ['class'] });
+    
+    // Focus the editor with robust timing
+    // Simple focus function - only focus the editor, don't click or do other aggressive things
+    function ensureEditorFocus() {
+        if (quill && quill.focus) {
+            quill.focus();
+        }
+    }
+    
+    // Only focus when the window gains focus (not on every click or IPC message)
+    window.addEventListener('focus', () => {
+        setTimeout(ensureEditorFocus, 100);
+    });

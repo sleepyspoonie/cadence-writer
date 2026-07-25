@@ -1,80 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>About - Focus Writer</title>
+    <title>About - Cadence Writer</title>
     <link rel="stylesheet" href="style.css">
-    <style>
-        .about-container {
-            grid-area: main;
-            padding: 3rem;
-            max-width: 900px;
-            margin: 0 auto;
-            width: 100%;
-        }
-    
-        .about-section {
-            background: var(--color-bg-secondary);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-        }
-    
-        .about-section h2 {
-            color: var(--color-accent);
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
-        }
-    
-        .about-section h3 {
-            color: var(--color-text-primary);
-            margin-top: 1.5rem;
-            margin-bottom: 1rem;
-            font-size: 1.2rem;
-        }
-    
-        .about-section p {
-            line-height: 1.8;
-            color: var(--color-text-secondary);
-            margin-bottom: 1rem;
-        }
-    
-        .about-section ul {
-            margin-left: 1.5rem;
-            line-height: 1.8;
-            color: var(--color-text-secondary);
-        }
-    
-        .about-section li {
-            margin-bottom: 0.5rem;
-        }
-    
-        .shortcut-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-    
-        .shortcut-item {
-            background: var(--color-bg-tertiary);
-            padding: 1rem;
-            border-radius: 8px;
-            border: 1px solid var(--color-border);
-        }
-    
-        .shortcut-key {
-            color: var(--color-accent);
-            font-family: monospace;
-            font-size: 0.9rem;
-        }
-    
-        .shortcut-desc {
-            color: var(--color-text-muted);
-            font-size: 0.9rem;
-            margin-top: 0.25rem;
-        }
-    </style>
+    <link rel="stylesheet" href="css/about.css">
 </head>
 <body>
     <header>
@@ -95,11 +24,11 @@
     </header>
     
     <div class="about-container">
-        <h1>About Focus Writer</h1>
+        <h1>About Cadence Writer</h1>
         
         <div class="about-section">
-            <h2>Welcome to Focus Writer</h2>
-            <p>Focus Writer is a distraction-free writing environment designed to help you achieve your writing goals. Whether you're working on a novel, blog post, or daily journal, Focus Writer keeps you focused and productive.</p>
+            <h2>Welcome to Cadence Writer</h2>
+            <p>Cadence Writer is a distraction-free writing environment designed to help you achieve your writing goals. Whether you're working on a novel, blog post, or daily journal, Cadence Writer keeps you focused and productive.</p>
             
             <h3>Key Features</h3>
             <ul>
@@ -167,94 +96,7 @@
         </div>
     </div>
 
-    <script>
-        const { ipcRenderer } = require('electron');
-        
-        // Track page visit for achievements
-        document.addEventListener('DOMContentLoaded', () => {
-            ipcRenderer.send('page-visited', 'about');
-        });
-        
-        // Test function for time achievements (development)
-        window.testTimeAchievements = function() {
-            console.log('Testing time achievements...');
-            ipcRenderer.send('test-time-achievements');
-        };
-        
-        // Test function for Silent Treatment (development)
-        window.testSilentTreatment = function() {
-            console.log('Testing Silent Treatment achievement...');
-            ipcRenderer.send('silent-treatment-achieved', {
-                idleMinutes: 10.5,
-                textLength: 0,
-                wordCount: 0
-            });
-        };
-        
-        // Test function for Daily achievements (development)
-        window.testDailyAchievements = function() {
-            console.log('Testing daily achievements...');
-            ipcRenderer.send('test-daily-achievements');
-        };
-        
-        // Test function for File Management achievements (development)
-        window.testFileAchievements = function() {
-            console.log('Testing file management achievements...');
-            ipcRenderer.send('test-file-achievements');
-        };
-        
-        // Test function for Comeback achievements (development)
-        window.testComebackAchievements = function() {
-            console.log('Testing comeback achievements...');
-            ipcRenderer.send('test-comeback-achievements');
-        };
-        
-        // Test function for Save achievements (development)
-        window.testSaveAchievements = function() {
-            console.log('Testing save achievements...');
-            ipcRenderer.send('test-save-achievements');
-        };
-        
-        // Test function for Procrastinator achievements (development)
-        window.testProcrastinatorAchievements = function() {
-            console.log('Testing procrastinator achievements...');
-            ipcRenderer.send('test-procrastinator-achievements');
-        };
-        
-        // Test function for Meta achievements (development)
-        window.testMetaAchievements = function() {
-            console.log('Testing meta achievements...');
-            ipcRenderer.send('test-meta-achievements');
-        };
-        
-        // Test function for Session achievements (development)
-        window.testSessionAchievements = function() {
-            console.log('Testing all remaining session achievements...');
-            ipcRenderer.send('test-session-achievements');
-        };
-        
-        // Fullscreen toggle
-        document.getElementById('fullscreenToggle').addEventListener('click', () => {
-            ipcRenderer.send('toggle-fullscreen');
-        });
-        
-        ipcRenderer.on('fullscreen-changed', (event, isFullscreen) => {
-            const btn = document.getElementById('fullscreenToggle');
-            if (isFullscreen) {
-                btn.title = 'Exit Fullscreen';
-                btn.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
-                    </svg>`;
-            } else {
-                btn.title = 'Enter Fullscreen';
-                btn.innerHTML = `
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
-                    </svg>`;
-            }
-        });
-    </script>
+<script src="js/about.js"></script>
     <script src="achievement-notifications.js"></script>
     <script src="visibility-controller.js"></script>
     <script src="theme-manager.js"></script>

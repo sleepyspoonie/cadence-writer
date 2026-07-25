@@ -12,6 +12,9 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
+      # Don't cancel the other platforms if one fails — a macOS build problem
+      # shouldn't cost you the Windows installer.
+      fail-fast: false
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]
 
@@ -22,7 +25,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
         cache: 'npm'
 
     - name: Install dependencies
@@ -44,22 +47,22 @@ jobs:
       if: matrix.os == 'windows-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: focus-writer-windows
-        path: dist/win-unpacked/
+        name: cadence-writer-windows
+        path: dist/*.exe
 
     - name: Upload macOS Artifacts
       if: matrix.os == 'macos-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: focus-writer-macos
-        path: dist/Focus Writer*.dmg
+        name: cadence-writer-macos
+        path: dist/Cadence Writer*.dmg
 
     - name: Upload Linux Artifacts
       if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: focus-writer-linux
-        path: dist/Focus Writer*.AppImage
+        name: cadence-writer-linux
+        path: dist/Cadence Writer*.AppImage
 
   release:
     needs: build
@@ -74,9 +77,9 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          focus-writer-windows/*
-          focus-writer-macos/*
-          focus-writer-linux/*
+          cadence-writer-windows/*
+          cadence-writer-macos/*
+          cadence-writer-linux/*
         draft: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
