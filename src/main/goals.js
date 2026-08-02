@@ -7,6 +7,7 @@ const fs = require('fs').promises
 const path = require('path')
 const state = require('./state')
 const { loadStats, saveStats } = require('./stats')
+const achievementsIpc = require('./achievements-ipc')
 
 
 
@@ -102,7 +103,7 @@ ipcMain.on('set-daily-goal', (event, goalData) => {
 
 
 // Set long-term goal (kept for backward compatibility)
-ipcMain.on('set-long-term-goal', (event, goalData) => {
+ipcMain.on('set-long-term-goal', async (event, goalData) => {
   const settings = state.store.get('userPreferences');
   
   // Ensure the new goal is not marked as completed
@@ -120,6 +121,18 @@ ipcMain.on('set-long-term-goal', (event, goalData) => {
   };
   state.store.set('userPreferences', updatedSettings);
   console.log('Long-term goal set:', newGoalData);
+  
+  // Committing to a long-term goal unlocks "It's the Climb".
+  try {
+    const stats = await loadStats();
+    if (!stats.longTermGoalCommitted) {
+      stats.longTermGoalCommitted = true;
+      await saveStats(stats);
+    }
+    await achievementsIpc.checkAndUnlockAchievements(stats, { queueForHomepage: true });
+  } catch (error) {
+    console.error('Error recording long-term goal commitment:', error);
+  }
   
   // Broadcast settings update to all windows (including homepage)
   if (state.mainWindow && !state.mainWindow.isDestroyed()) {

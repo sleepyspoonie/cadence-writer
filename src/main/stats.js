@@ -686,4 +686,91 @@ function getAchievementData() {
   }
 }
 
-module.exports = { loadStats, saveStats, calculateStreak }
+// --- Writing milestone tracking -------------------------------------------
+// Called once per completed session, before stats are saved. Maintains the
+// longitudinal flags that several achievements depend on (drought length,
+// streak rebirth, long-term goal progress). These are cumulative "has ever
+// happened" markers, so once set they stay set.
+
+function toDateKey (d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+function daysBetween (fromKey, toKey) {
+  // Parse as local midnight so DST shifts can't produce fractional days.
+  const [y1, m1, d1] = fromKey.split('-').map(Number)
+  const [y2, m2, d2] = toKey.split('-').map(Number)
+  const a = new Date(y1, m1 - 1, d1)
+  const b = new Date(y2, m2 - 1, d2)
+  return Math.round((b - a) / (1000 * 60 * 60 * 24))
+}
+
+function wordsSince (stats, startDate) {
+  return (stats.sessionLogs || []).reduce((sum, session) => {
+    const when = new Date(session.time)
+    return when >= startDate ? sum + (session.newWords || 0) : sum
+  }, 0)
+}
+
+function updateWritingMilestones (stats, prefs, today, streak) {
+  // --- Drought and streak rebirth ---
+  const previous = stats.lastWritingDate
+  if (previous && previous !== today) {
+    const gap = daysBetween(previous, today)
+
+    // A gap of more than one day means the streak lapsed.
+    if (gap > 1) {
+      stats.streakWasBroken = true
+
+      // Phoenix: a genuine streak (2+ days) was broken and writing resumed.
+      if ((stats.lastStreakLength || 0) >= 2) {
+        stats.streakRebirth = true
+      }
+
+      // Comeback Kid: keep the longest drought ever broken.
+      if (gap >= 30) {
+        stats.brokenDrought = Math.max(stats.brokenDrought || 0, gap)
+      }
+    }
+  }
+  stats.lastWritingDate = today
+  // Streak as of the most recent writing day, so the next session can tell
+  // whether a real streak was lost during any gap.
+  stats.lastStreakLength = streak
+
+  // --- Long-term goal milestones ---
+  const goal = prefs && prefs.longTermGoals
+  if (goal && goal.enabled && goal.startDate) {
+    const start = new Date(goal.startDate)
+    const startKey = toDateKey(start)
+    const totalDays = goal.totalDays || 0
+    const totalWords = goal.totalWords || 0
+
+    // Valley of Death: a day passed with no writing while committed.
+    const elapsed = daysBetween(startKey, today)
+    for (let i = 0; i < elapsed; i++) {
+      const day = new Date(start)
+      day.setDate(day.getDate() + i)
+      const key = toDateKey(day)
+      const dayStats = (stats.dailyStats || {})[key]
+      if (!dayStats || !dayStats.words) {
+        stats.missedLongTermDay = true
+        break
+      }
+    }
+
+    // Mountaineer: half the words by the halfway point of the challenge.
+    if (totalDays > 0 && totalWords > 0 && !stats.reachedMidpoint) {
+      const daysPassed = Math.max(1, elapsed + 1)
+      if (daysPassed <= Math.ceil(totalDays / 2) &&
+          wordsSince(stats, start) >= totalWords / 2) {
+        stats.reachedMidpoint = true
+      }
+    }
+  }
+
+  return stats
+}
+
+
+module.exports = { loadStats, saveStats, calculateStreak, updateWritingMilestones }

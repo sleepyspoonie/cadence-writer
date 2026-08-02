@@ -434,18 +434,26 @@ async function checkAndUnlockAchievements(stats, currentSession) {
       brokenDrought: stats.brokenDrought || 0,
       // Streak rebirth tracking for Phoenix achievement
       streakRebirth: stats.streakRebirth || false,
-      // Project diversity tracking for Dabbler achievement
-      uniqueProjects: (stats.uniqueProjects || []).length,
+      // Project diversity tracking for Dabbler achievement. Distinct
+      // documents count as distinct projects.
+      uniqueProjects: (stats.uniqueDocuments || []).length,
       // Time without writing tracking for Procrastinator's Special
       timeWithoutWriting: stats.timeWithoutWriting || 0,
       // Hidden achievement tracking for Hidden Talent meta achievement
       firstHiddenAchievement: stats.firstHiddenAchievement || false,
       // Meta achievement counters for Overachiever and Completionist
       totalAchievements: unlockedAchievements.length,
-      unlockedNonHidden: unlockedAchievements.filter(id => {
-        const achievement = state.achievementSystem.getAllAchievements()[id];
-        return achievement && !achievement.hidden;
-      }).length,
+      // getAllAchievements() returns an array and unlockedAchievements holds
+      // objects, so this has to match on id rather than index by key.
+      unlockedNonHidden: (() => {
+        const byId = new Map(
+          state.achievementSystem.getAllAchievements().map(a => [a.id, a])
+        );
+        return unlockedAchievements.filter(entry => {
+          const achievement = byId.get(entry && entry.id ? entry.id : entry);
+          return achievement && !achievement.hidden;
+        }).length;
+      })(),
       totalNonHidden: Object.values(state.achievementSystem.getAllAchievements()).filter(a => !a.hidden).length,
       totalPossible: Object.keys(state.achievementSystem.getAllAchievements()).length,
       // Long-term goal progress tracking

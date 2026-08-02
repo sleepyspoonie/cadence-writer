@@ -6,7 +6,7 @@ const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron')
 const fs = require('fs').promises
 const path = require('path')
 const state = require('./state')
-const { loadStats, saveStats, calculateStreak } = require('./stats')
+const { loadStats, saveStats, calculateStreak, updateWritingMilestones } = require('./stats')
 const { checkAndUnlockAchievements } = require('./achievements-ipc')
 
 
@@ -76,6 +76,9 @@ ipcMain.on('session-completed', async (event, data) => {
     const streak = calculateStreak(stats.dailyStats, prefs);
     state.store.set('userPreferences', { ...prefs, currentStreak: streak });
     
+    // Update drought / streak-rebirth / long-term goal milestone flags
+    updateWritingMilestones(stats, prefs, today, streak);
+    
     // Save stats
     await saveStats(stats);
     
@@ -90,6 +93,8 @@ ipcMain.on('session-completed', async (event, data) => {
       successful: data.successful || false,
       ragequit: data.ragequit || false,
       sessionStartTime: data.sessionStartTime,
+      pasteDetected: data.pasteDetected || false,
+      manualSaves: data.manualSaves || 0,
       queueForHomepage: true  // Flag to queue achievements instead of showing immediately
     });
     

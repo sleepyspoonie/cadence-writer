@@ -39,7 +39,11 @@ async function createWindow () {
         preload: path.join(__dirname, '..', '..', 'preload.js'),
         contextIsolation: true,
         nodeIntegration: false,
-        sandbox: false
+        sandbox: false,
+        // Belt-and-braces with <meta charset> on each page: without this,
+        // Chromium falls back to the system codepage (Windows-1252 on most
+        // Windows installs), which turns emoji into mojibake like "ðŸ“„".
+        defaultEncoding: 'UTF-8'
       }
     })
     console.log('Browser window created')
