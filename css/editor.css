@@ -195,13 +195,50 @@ body {
 .ql-editor {
     max-width: 70ch;
     margin: 0 auto !important;
-    padding: 3rem clamp(2rem, 6vw, 4rem) 22vh !important;
+    /* Half an inch of page margin top and bottom (CSS `in` maps to 96px).
+       The bottom keeps the generous trailing scroll space so the cursor never
+       sits against the bottom edge, but never drops below half an inch. */
+    padding: 0.5in clamp(2rem, 6vw, 4rem) max(0.5in, 22vh) !important;
     line-height: 1.85 !important;
     color: var(--editor-text) !important;
     background: var(--editor-bg);
     caret-color: var(--color-accent);
     min-height: 100% !important;
     overflow: visible !important;
+}
+
+/* Quill resets block margins to 0; restore breathing room between paragraphs.
+   Uses the same em-based value for headings so spacing scales with font size.
+   List items stay tight so bullets don't drift apart. */
+.ql-editor > p {
+    margin-bottom: 0.85em;
+}
+
+.ql-editor > p:last-child {
+    margin-bottom: 0;
+}
+
+.ql-editor > h1,
+.ql-editor > h2,
+.ql-editor > h3 {
+    margin-top: 1.2em;
+    margin-bottom: 0.5em;
+}
+
+.ql-editor > h1:first-child,
+.ql-editor > h2:first-child,
+.ql-editor > h3:first-child {
+    margin-top: 0;
+}
+
+.ql-editor > blockquote,
+.ql-editor > pre {
+    margin-bottom: 0.85em;
+}
+
+.ql-editor > ol,
+.ql-editor > ul {
+    margin-bottom: 0.85em;
 }
 
 .ql-editor ::selection,
