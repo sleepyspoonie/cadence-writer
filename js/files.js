@@ -53,6 +53,14 @@
                         <button class="action-btn" onclick="openFile('${safePathString}')">Open</button>
                         <button class="action-btn" onclick="showInExplorer('${safePathString}')">Show in Folder</button>
                         <button class="action-btn" onclick="startRename('${safePathString}', '${safeName}')">Rename</button>
+                        <div class="export-wrap">
+                            <button class="action-btn" onclick="toggleExportMenu(event, '${safePathString}')">Export ▾</button>
+                            <div class="export-menu">
+                                <button onclick="exportFile(event, '${safePathString}', 'docx')">Word (.docx)</button>
+                                <button onclick="exportFile(event, '${safePathString}', 'html')">HTML (.html)</button>
+                                <button onclick="exportFile(event, '${safePathString}', 'md')">Markdown (.md)</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="file-icon">📄</div>
                     <div class="file-name" id="name-${file.path.replace(/[\\/:]/g, '-')}">${file.name}</div>
@@ -85,6 +93,45 @@
         // Global functions for onclick handlers
         window.openFile = function(filePath) {
             ipcRenderer.send('open-file-in-editor', filePath);
+        }
+
+        // --- Export ---------------------------------------------------------
+        window.toggleExportMenu = function(event, filePath) {
+            event.stopPropagation();
+            const wrap = event.currentTarget.parentElement;
+            const isOpen = wrap.classList.contains('open');
+            document.querySelectorAll('.export-wrap.open').forEach(w => w.classList.remove('open'));
+            if (!isOpen) wrap.classList.add('open');
+        }
+
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.export-wrap.open').forEach(w => w.classList.remove('open'));
+        });
+
+        window.exportFile = function(event, filePath, format) {
+            event.stopPropagation();
+            document.querySelectorAll('.export-wrap.open').forEach(w => w.classList.remove('open'));
+            ipcRenderer.send('export-file', filePath, format);
+        }
+
+        ipcRenderer.on('export-complete', (event, result) => {
+            if (result.canceled) return;
+            showToast(result.success
+                ? 'Exported to ' + result.path
+                : 'Export failed: ' + (result.error || 'unknown error'), !result.success);
+        });
+
+        // --- Import ---------------------------------------------------------
+        function showToast(message, isError) {
+            const toast = document.createElement('div');
+            toast.className = 'files-toast' + (isError ? ' error' : '');
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.add('show'));
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
 
         window.showInExplorer = function(filePath) {

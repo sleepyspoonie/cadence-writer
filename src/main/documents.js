@@ -7,6 +7,7 @@ const fs = require('fs').promises
 const path = require('path')
 const state = require('./state')
 const { loadStats, saveStats } = require('./stats')
+const exporter = require('./export')
 
 
 // Folder selection
@@ -433,5 +434,132 @@ ipcMain.on('open-file-in-editor', async (event, filePath) => {
   
   state.mainWindow.loadFile('editor.html');
 });
+
+// --- Export ------------------------------------------------------------------
+// Converts a stored document to Word, HTML, or Markdown via a save dialog.
+
+const EXPORT_FORMATS = {
+  docx: { ext: 'docx', label: 'Word Document' },
+  html: { ext: 'html', label: 'HTML Page' },
+  md: { ext: 'md', label: 'Markdown' }
+}
+
+ipcMain.on('export-file', async (event, filePath, format) => {
+  const spec = EXPORT_FORMATS[format]
+  if (!spec) {
+    event.reply('export-complete', { success: false, error: 'Unknown export format.' })
+    return
+  }
+
+  try {
+    const raw = await fs.readFile(filePath, 'utf8')
+    let delta
+    let title = path.basename(filePath, path.extname(filePath))
+
+    try {
+      const parsed = JSON.parse(raw)
+      delta = parsed.quillContent
+      // Older/plain files may only have text.
+      if (!delta) delta = exporter.textToDelta(parsed.plainText || '')
+    } catch (parseError) {
+      // Not one of our JSON documents — treat the whole file as plain text.
+      delta = exporter.textToDelta(raw)
+    }
+
+    const { canceled, filePath: target } = await dialog.showSaveDialog(state.mainWindow, {
+      title: `Export as ${spec.label}`,
+      defaultPath: `${title}.${spec.ext}`,
+      filters: [{ name: spec.label, extensions: [spec.ext] }]
+    })
+    if (canceled || !target) {
+      event.reply('export-complete', { success: false, canceled: true })
+      return
+    }
+
+    if (format === 'docx') {
+      await fs.writeFile(target, await exporter.toDocxBuffer(delta, title))
+    } else if (format === 'html') {
+      await fs.writeFile(target, exporter.toHtml(delta, title), 'utf8')
+    } else {
+      await fs.writeFile(target, exporter.toMarkdown(delta, title), 'utf8')
+    }
+
+    console.log('Exported', filePath, '->', target)
+    event.reply('export-complete', { success: true, path: target, format })
+  } catch (error) {
+    console.error('Export failed:', error)
+    event.reply('export-complete', { success: false, error: error.message })
+  }
+})
+
+
+// --- Import ------------------------------------------------------------------
+// Creates a document from pasted text. The words are stored as the document's
+// existing content, so when a session opens the file the editor reports them as
+// the starting word count — meaning they are never counted as words written.
+
+ipcMain.on('import-text', async (event, payload) => {
+  const prefs = state.store.get('userPreferences')
+  const folderPath = prefs ? prefs.documentsFolder : null
+
+  if (!folderPath) {
+    event.reply('import-complete', { success: false, error: 'Set a documents folder first.' })
+    return
+  }
+
+  const text = (payload && payload.text) || ''
+  if (!text.trim()) {
+    event.reply('import-complete', { success: false, error: 'Nothing to import.' })
+    return
+  }
+
+  try {
+    const requested = ((payload && payload.name) || '').trim()
+    const safeName = requested
+      ? requested.replace(/[\\/:*?"<>|]/g, '-').slice(0, 80)
+      : `imported-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)}`
+
+    let target = path.join(folderPath, `${safeName}.rtf`)
+    let suffix = 2
+    // Don't silently overwrite an existing document.
+    while (true) {
+      try {
+        await fs.access(target)
+        target = path.join(folderPath, `${safeName} (${suffix++}).rtf`)
+      } catch {
+        break
+      }
+    }
+
+    const wordCount = exporter.countWords(text)
+    const fileData = {
+      quillContent: exporter.textToDelta(text),
+      plainText: text,
+      wordCount,
+      imported: true,
+      importedWords: wordCount,
+      lastModified: new Date().toISOString()
+    }
+    await fs.writeFile(target, JSON.stringify(fileData, null, 2))
+
+    // Count the document itself, but never the words.
+    const stats = await loadStats()
+    stats.totalDocuments = (stats.totalDocuments || 0) + 1
+    const documentName = path.basename(target, path.extname(target))
+    if (!stats.uniqueDocuments) stats.uniqueDocuments = []
+    if (!stats.uniqueDocuments.includes(documentName)) {
+      stats.uniqueDocuments.push(documentName)
+    }
+    await saveStats(stats)
+
+    console.log('Imported', wordCount, 'words to', target, '(excluded from word counts)')
+    event.reply('import-complete', {
+      success: true, path: target, name: path.basename(target), wordCount
+    })
+  } catch (error) {
+    console.error('Import failed:', error)
+    event.reply('import-complete', { success: false, error: error.message })
+  }
+})
 
 module.exports = {}

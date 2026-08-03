@@ -20,6 +20,7 @@
     "electron-builder": "^26.0.12"
   },
   "dependencies": {
+    "docx": "^9.7.1",
     "electron-store": "^10.1.0"
   },
   "build": {
