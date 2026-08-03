@@ -22,6 +22,7 @@ const SEND_CHANNELS = [
   'get-detailed-stats',
   'get-homepage-stats',
   'get-queued-achievements',
+  'queued-achievements-shown',
   'get-reward-images',
   'get-session-settings',
   'get-settings',

@@ -15,6 +15,32 @@
         }
     });
     
+    // Pasted text often carries colour and background from its source (a
+    // browser, Word, Google Docs). Quill stores those as inline styles on a
+    // <span>, which beats the theme's CSS and leaves text stuck at whatever
+    // colour it was copied as. Strip them on the way in so the writing surface
+    // always follows the chosen theme.
+    const stripColour = (node, delta) => {
+        delta.ops.forEach(op => {
+            if (op.attributes) {
+                delete op.attributes.color;
+                delete op.attributes.background;
+            }
+        });
+        return delta;
+    };
+    quill.clipboard.addMatcher(Node.ELEMENT_NODE, stripColour);
+    quill.clipboard.addMatcher(Node.TEXT_NODE, stripColour);
+
+    // Existing documents may already have colour baked in from before the
+    // matcher above existed. Clear it once, after content loads, so old files
+    // pick up the theme too.
+    const clearStoredColour = () => {
+        const len = quill.getLength();
+        if (!len) return;
+        quill.formatText(0, len, { color: false, background: false }, 'silent');
+    };
+
     // Focus mode: fade the header and toolbar while typing; any mouse
     // movement brings them back.
     const editorContainer = document.querySelector('.editor-container');
@@ -866,6 +892,7 @@
         // Wait a moment for Quill to be fully ready, then load content
         setTimeout(() => {
         quill.setContents(fileInfo.content);
+        clearStoredColour();
         quill.focus(); // Re-focus the editor after loading content
 
         // Debug editor state

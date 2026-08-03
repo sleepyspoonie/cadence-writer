@@ -500,47 +500,41 @@
     
     // Achievement unlocks are handled by achievement-notifications.js system
 
-    // Handle queued achievements from completed writing sessions
-    ipcRenderer.on('queued-achievements', (event, achievements) => {
-        console.log('Queued achievements received:', achievements);
-        console.log('Achievement notifier available:', !!window.achievementNotifications);
-        
-        if (achievements.length > 0) {
-            if (window.achievementNotifications) {
-                console.log('Displaying', achievements.length, 'queued achievements');
-                // Show queued achievements with a small delay between each
-                achievements.forEach((achievement, index) => {
-                    setTimeout(() => {
-                        console.log('Showing queued achievement:', achievement.title);
-                        // Only play sound for the first achievement to avoid overlapping chimes
-                        const playSound = index === 0;
-                        window.achievementNotifications.showNotification(achievement, playSound);
-                    }, index * 800); // 800ms delay between each achievement
-                });
-            } else {
-                console.warn('Achievement notifier not available, cannot show achievements');
-                // Try again after a short delay in case the script is still loading
-                setTimeout(() => {
-                    if (window.achievementNotifications) {
-                        console.log('Achievement notifier now available, showing achievements');
-                        achievements.forEach((achievement, index) => {
-                            setTimeout(() => {
-                                console.log('Showing queued achievement:', achievement.title);
-                                // Only play sound for the first achievement to avoid overlapping chimes
-                                const playSound = index === 0;
-                                window.achievementNotifications.showNotification(achievement, playSound);
-                            }, index * 800);
-                        });
-                    } else {
-                        console.error('Achievement notifier still not available after delay');
-                    }
-                }, 1000);
-            }
-        } else {
-            console.log('No queued achievements to display');
+    // Handle queued achievements from completed writing sessions.
+    // Each achievement is confirmed back to the main process as it is shown,
+    // so anything not displayed stays queued and appears next time instead of
+    // being silently dropped.
+    let displayingQueue = false;
+
+    function withNotifier (callback, attempt = 0) {
+        if (window.achievementNotifications) return callback();
+        if (attempt > 40) {   // ~10s
+            console.warn('Achievement notifier unavailable; leaving queue intact');
+            displayingQueue = false;
+            return;
         }
+        setTimeout(() => withNotifier(callback, attempt + 1), 250);
+    }
+
+    ipcRenderer.on('queued-achievements', (event, achievements) => {
+        if (!achievements || achievements.length === 0) return;
+        if (displayingQueue) return;   // a burst is already playing
+        displayingQueue = true;
+
+        withNotifier(() => {
+            achievements.forEach((achievement, index) => {
+                setTimeout(() => {
+                    if (!window.achievementNotifications) return;
+                    window.achievementNotifications.showNotification(achievement, index === 0);
+                    // Confirm this one individually; if the window closes or the
+                    // user navigates away, the rest remain queued.
+                    ipcRenderer.send('queued-achievements-shown', [achievement.id]);
+                    if (index === achievements.length - 1) displayingQueue = false;
+                }, index * 800);
+            });
+        });
     });
-    
+
     // Check for recent file and request stats on load
     document.addEventListener('DOMContentLoaded', () => {
         console.log('DOM loaded - adding event listeners');

@@ -11,8 +11,17 @@ const statsMod = require('./stats')
 
 // IPC handler to get queued achievements for homepage
 ipcMain.on('get-queued-achievements', (event) => {
-  const queuedAchievements = getAndClearQueuedAchievements();
+  // Peek only. The queue is cleared by 'queued-achievements-shown' once the
+  // renderer confirms it actually displayed them — otherwise achievements are
+  // lost whenever the page can't show them (notifier not ready yet, or the
+  // user navigates away mid-display).
+  const queuedAchievements = peekQueuedAchievements();
   event.reply('queued-achievements', queuedAchievements);
+});
+
+// Renderer confirms which achievements it actually displayed.
+ipcMain.on('queued-achievements-shown', (event, shownIds) => {
+  clearShownAchievements(shownIds);
 });
 
 
@@ -541,23 +550,31 @@ function queueAchievementsForHomepage(achievements) {
   }
 }
 
-// Get and clear queued achievements for homepage display
-function getAndClearQueuedAchievements() {
+// Read the queue without clearing it.
+function peekQueuedAchievements() {
   try {
-    const prefs = state.store.get('userPreferences', {});
-    const queuedAchievements = prefs.queuedAchievements || [];
-    
-    if (queuedAchievements.length > 0) {
-      // Clear the queue after retrieving
-      prefs.queuedAchievements = [];
-      state.store.set('userPreferences', prefs);
-      console.log('Retrieved and cleared', queuedAchievements.length, 'queued achievements');
-    }
-    
-    return queuedAchievements;
+    return state.store.get('userPreferences', {}).queuedAchievements || [];
   } catch (error) {
     console.error('Error retrieving queued achievements:', error);
     return [];
+  }
+}
+
+// Remove specific achievements from the queue once the renderer has shown
+// them. Matching by id means anything unshown stays queued for next time.
+function clearShownAchievements(shownIds) {
+  try {
+    const prefs = state.store.get('userPreferences', {});
+    const queued = prefs.queuedAchievements || [];
+    if (!queued.length) return;
+
+    const shown = new Set(shownIds || []);
+    prefs.queuedAchievements = queued.filter(a => !shown.has(a && a.id));
+    state.store.set('userPreferences', prefs);
+    console.log('Cleared', queued.length - prefs.queuedAchievements.length,
+      'shown achievements;', prefs.queuedAchievements.length, 'still queued');
+  } catch (error) {
+    console.error('Error clearing shown achievements:', error);
   }
 }
 
