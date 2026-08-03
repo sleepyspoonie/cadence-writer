@@ -234,13 +234,31 @@
     position: absolute;
     right: 0;
     top: calc(100% + 4px);
+    /* Sits above neighbouring cards, which otherwise paint over it. */
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
     overflow: hidden;
-    z-index: 50;
+    z-index: 400;
     min-width: 150px;
+}
+
+/* Cards create their own stacking context (.file-actions animates opacity), so
+   the card holding an open menu has to be lifted above its neighbours or the
+   menu is painted underneath them and can't be clicked. */
+.file-card.menu-open {
+    z-index: 300;
+}
+
+.file-actions {
+    z-index: 10;
+}
+
+/* Flip upwards when there isn't room below (bottom row of the grid). */
+.export-wrap.drop-up .export-menu {
+    top: auto;
+    bottom: calc(100% + 4px);
 }
 
 .export-wrap.open .export-menu {
@@ -292,4 +310,23 @@
 
 .files-toast.error {
     border-left-color: #f87171;
+}
+
+
+/* --- Import button -------------------------------------------------------- */
+.import-btn {
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.import-btn:hover {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
 }

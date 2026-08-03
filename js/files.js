@@ -96,16 +96,39 @@
         }
 
         // --- Export ---------------------------------------------------------
+        function closeAllExportMenus() {
+            document.querySelectorAll('.export-wrap.open').forEach(w => {
+                w.classList.remove('open', 'drop-up');
+                const card = w.closest('.file-card');
+                if (card) card.classList.remove('menu-open');
+            });
+        }
+
         window.toggleExportMenu = function(event, filePath) {
             event.stopPropagation();
             const wrap = event.currentTarget.parentElement;
             const isOpen = wrap.classList.contains('open');
-            document.querySelectorAll('.export-wrap.open').forEach(w => w.classList.remove('open'));
-            if (!isOpen) wrap.classList.add('open');
+            closeAllExportMenus();
+            if (isOpen) return;
+
+            wrap.classList.add('open');
+            // Lift the whole card so the menu isn't painted under its neighbours.
+            const card = wrap.closest('.file-card');
+            if (card) card.classList.add('menu-open');
+
+            // If the menu would run off the bottom of the window, flip it above
+            // the button instead.
+            const menu = wrap.querySelector('.export-menu');
+            if (menu) {
+                const spaceBelow = window.innerHeight - wrap.getBoundingClientRect().bottom;
+                if (spaceBelow < menu.offsetHeight + 16) wrap.classList.add('drop-up');
+            }
         }
 
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.export-wrap.open').forEach(w => w.classList.remove('open'));
+        document.addEventListener('click', closeAllExportMenus);
+        window.addEventListener('scroll', closeAllExportMenus, true);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeAllExportMenus();
         });
 
         window.exportFile = function(event, filePath, format) {
@@ -132,6 +155,13 @@
                 toast.classList.remove('show');
                 setTimeout(() => toast.remove(), 300);
             }, 4000);
+        }
+
+        const importBtn = document.getElementById('importBtn');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => {
+                ipcRenderer.send('start-import-document');
+            });
         }
 
         window.showInExplorer = function(filePath) {
@@ -197,12 +227,12 @@
         }
 
         ipcRenderer.on('file-renamed', (event, result) => {
-            if (result.success) {
-                loadFiles();
-            } else {
-                alert('Error renaming file: ' + result.error);
-                loadFiles();
+            if (!result.success) {
+                // Name clashes are an ordinary mistake, not a crash — show the
+                // message inline rather than in a blocking dialog.
+                showToast(result.error || 'Could not rename that file.', true);
             }
+            loadFiles();
         });
 
         // Search functionality

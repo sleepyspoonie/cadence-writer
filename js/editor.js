@@ -68,6 +68,12 @@
     let settingsReceived = false;
     let sessionStartTime = Date.now();
     let pasteDetected = false;
+    // Words that arrived by pasting. Subtracted from the session total so
+    // importing existing writing never inflates your word count.
+    let pastedWords = 0;
+    // Import mode is a session started from the Files page purely to paste in
+    // existing writing. Nothing typed or pasted during it counts toward stats.
+    let importMode = false;
     
     // Gamification mode variables
     let gamificationMode = 'focus';
@@ -393,6 +399,14 @@
             container.querySelector('#editor-wrapper').style.setProperty('transition', 'none', 'important');
             container.querySelector('#editor').style.setProperty('background-color', '#ff4444', 'important');
             container.querySelector('#editor').style.setProperty('transition', 'none', 'important');
+            // Include the paper card and toolbar so the red covers everything.
+            ['.editor-main', '.ql-toolbar'].forEach(sel => {
+                const el = container.querySelector(sel);
+                if (el) {
+                    el.style.setProperty('background-color', '#ff4444', 'important');
+                    el.style.setProperty('transition', 'none', 'important');
+                }
+            });
             
             startAlarm();
             startTextDeletion();
@@ -506,6 +520,13 @@
         container.querySelector('#editor-wrapper').style.removeProperty('transition');
         container.querySelector('#editor').style.removeProperty('background-color');
         container.querySelector('#editor').style.removeProperty('transition');
+        ['.editor-main', '.ql-toolbar'].forEach(sel => {
+            const el = container.querySelector(sel);
+            if (el) {
+                el.style.removeProperty('background-color');
+                el.style.removeProperty('transition');
+            }
+        });
         
         // Set 2-second transition for fading out red
         container.style.transition = 'background-color 2s ease-out';
@@ -831,6 +852,8 @@
             targetWords: sessionMode === 'wordcount' ? wordCountGoal : null,
             targetTime: sessionMode === 'timer' ? sessionGoal : null,
             pasteDetected: pasteDetected,
+            pastedWords: pastedWords,
+            importMode: importMode,
             sessionStartTime: sessionStartTime,
             sessionEndTime: sessionEndTime,
             manualSaves: manualSaveCount,
@@ -846,7 +869,37 @@
         sessionMode = settings.mode;
         sessionGoal = settings.goal;
         settingsReceived = true;
-        
+
+        // Import mode: a scratch session for pasting in existing writing.
+        // It behaves like freewrite, but nothing here reaches your stats.
+        if (sessionMode === 'import') {
+            importMode = true;
+            sessionMode = 'freewrite';
+            document.getElementById('sessionMode').textContent = 'Import Mode';
+            document.getElementById('progressLabel').textContent = 'Words pasted:';
+            document.getElementById('progressValue').textContent = '0';
+
+            const exitBtn = document.getElementById('exitBtn');
+            if (exitBtn) {
+                exitBtn.style.display = 'block';
+                exitBtn.textContent = 'Save & Exit';
+            }
+            const notice = document.getElementById('importNotice');
+            if (notice) notice.style.display = 'block';
+
+            disableGamificationModes();
+
+            // Put the caret in the editor straight away. Only the
+            // load-existing-content path calls focus(), so a fresh import
+            // document would otherwise open with nothing focused.
+            setTimeout(() => {
+                quill.enable(true);
+                quill.focus();
+                quill.setSelection(quill.getLength(), 0, 'silent');
+            }, 200);
+            return;
+        }
+
         if (sessionMode === 'freewrite') {
             document.getElementById('sessionMode').textContent = 'Freewrite Mode';
             document.getElementById('progressLabel').textContent = 'Session:';
@@ -928,6 +981,7 @@
     setTimeout(() => {
         sessionStarted = true;
         pasteDetected = false;
+        pastedWords = 0;
         console.log('Session started, goal checking enabled');
         console.log('Current mode:', sessionMode, 'Goal:', sessionGoal);
     }, 500);
@@ -938,6 +992,7 @@
         if (!sessionStarted) {
             sessionStarted = true;
             pasteDetected = false;
+        pastedWords = 0;
             console.log('Session started (new document), goal checking enabled');
         }
     }, 1500);
@@ -955,10 +1010,15 @@
         const words = text.trim().split(/\s+/).filter(word => word.length > 0);
         const totalWords = words.length;
         
-        sessionWordCount = Math.max(0, totalWords - initialWordCount);
+        sessionWordCount = Math.max(0, totalWords - initialWordCount - (importMode ? pastedWords : 0));
         currentWordCount = totalWords;
         
         document.getElementById('wordCount').textContent = sessionWordCount;
+
+        if (importMode) {
+            const readout = document.getElementById('progressValue');
+            if (readout) readout.textContent = totalWords;
+        }
         
         // Handle gamification modes on text change
         onTypingActivity();
@@ -986,13 +1046,39 @@
         resetIdleTimer();
     });
     
-    // Additional paste detection via clipboard event
+    // Additional paste detection via clipboard event. Measuring the document
+    // before and after Quill handles the paste means the count is accurate for
+    // rich text too, rather than guessing from the clipboard string.
+    function documentWordCount() {
+        const text = quill.getText();
+        return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    }
+
+    // Capture phase: Quill's own clipboard handler stops propagation, so a
+    // bubble-phase listener here would never fire.
     document.addEventListener('paste', function(e) {
-        if (document.activeElement && document.activeElement.closest('.ql-editor')) {
-            pasteDetected = true;
-            console.log('Paste event detected');
-        }
-    });
+        const target = document.activeElement;
+        const inEditor = (target && target.closest && target.closest('.ql-editor')) ||
+                         (e.target && e.target.closest && e.target.closest('.ql-editor'));
+        if (!inEditor) return;
+        pasteDetected = true;
+        const before = documentWordCount();
+        // Quill processes the paste asynchronously; measure once it has landed.
+        setTimeout(() => {
+            const added = documentWordCount() - before;
+            if (added > 0) {
+                pastedWords += added;
+                console.log('Paste added', added, 'words', importMode ? '(excluded — import mode)' : '(counted)');
+                // Refresh the on-screen counter now that the paste is excluded.
+                const totalWords = documentWordCount();
+                sessionWordCount = Math.max(0, totalWords - initialWordCount - (importMode ? pastedWords : 0));
+                currentWordCount = totalWords;
+                const display = document.getElementById('wordCount');
+                if (display) display.textContent = sessionWordCount;
+                lastWordCountCheck = totalWords;
+            }
+        }, 0);
+    }, true);
     
     // Keyboard event listeners for gamification modes
     document.addEventListener('keydown', function(e) {
@@ -1329,6 +1415,7 @@
         // Reset session start time for new sprint
         sessionStartTime = Date.now();
         pasteDetected = false;
+        pastedWords = 0;
         
         console.log('New sprint started with same goal');
     });

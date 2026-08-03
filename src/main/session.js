@@ -27,6 +27,15 @@ ipcMain.on('session-started', (event, data) => {
 
 // Session completion handler - handles session data and statistics tracking
 ipcMain.on('session-completed', async (event, data) => {
+  // Import sessions exist only to paste in existing writing, so they are not
+  // recorded at all — no words, no session log, no achievement checks. The
+  // pasted text still becomes the document's saved content, which means a
+  // later real session on that file starts from it as a baseline.
+  if (data && data.importMode) {
+    console.log('Import session finished — not recorded in stats');
+    return;
+  }
+
   console.log('*** SESSION COMPLETED HANDLER CALLED ***');
   console.log('Session data received:', data);
   

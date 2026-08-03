@@ -398,7 +398,40 @@ ipcMain.on('get-all-files', async (event) => {
 ipcMain.on('rename-file', async (event, oldPath, newName) => {
   try {
     const dir = path.dirname(oldPath);
-    const newPath = path.join(dir, newName);
+
+    // Keep the rename inside the documents folder: strip any path separators
+    // and characters Windows rejects, rather than trusting the typed name.
+    const safeName = path.basename(String(newName || ''))
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, '-')
+      .trim();
+
+    if (!safeName || safeName === '.' || safeName === '..') {
+      event.reply('file-renamed', { success: false, error: 'That name is not valid.' });
+      return;
+    }
+
+    const newPath = path.join(dir, safeName);
+
+    // Renaming to itself is a no-op (this also covers changing only the
+    // capitalisation on Windows, where the filesystem is case-insensitive).
+    if (path.resolve(newPath) !== path.resolve(oldPath)) {
+      // fs.rename overwrites silently, which would destroy the other document.
+      let clash = false;
+      try {
+        await fs.access(newPath);
+        clash = true;
+      } catch {
+        clash = false;
+      }
+      if (clash) {
+        event.reply('file-renamed', {
+          success: false,
+          error: `A file named "${safeName}" already exists. Pick a different name.`
+        });
+        return;
+      }
+    }
+
     await fs.rename(oldPath, newPath);
     
     // Update lastOpenedFile if it was renamed
@@ -493,73 +526,48 @@ ipcMain.on('export-file', async (event, filePath, format) => {
 })
 
 
-// --- Import ------------------------------------------------------------------
-// Creates a document from pasted text. The words are stored as the document's
-// existing content, so when a session opens the file the editor reports them as
-// the starting word count — meaning they are never counted as words written.
 
-ipcMain.on('import-text', async (event, payload) => {
-  const prefs = state.store.get('userPreferences')
-  const folderPath = prefs ? prefs.documentsFolder : null
+// Starts a blank document in "import mode" — a scratch session for pasting in
+// existing writing. Reuses the normal new-document flow so the file is created
+// and tracked identically; only the session mode differs.
+ipcMain.on('start-import-document', async (event) => {
+  const userPrefs = state.store.get('userPreferences')
+  const folderPath = userPrefs ? userPrefs.documentsFolder : null
 
   if (!folderPath) {
-    event.reply('import-complete', { success: false, error: 'Set a documents folder first.' })
+    event.reply('needs-folder-setup')
     return
   }
 
-  const text = (payload && payload.text) || ''
-  if (!text.trim()) {
-    event.reply('import-complete', { success: false, error: 'Nothing to import.' })
-    return
-  }
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+  state.currentFilePath = path.join(folderPath, `imported-${timestamp}.rtf`)
 
   try {
-    const requested = ((payload && payload.name) || '').trim()
-    const safeName = requested
-      ? requested.replace(/[\\/:*?"<>|]/g, '-').slice(0, 80)
-      : `imported-${new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)}`
-
-    let target = path.join(folderPath, `${safeName}.rtf`)
-    let suffix = 2
-    // Don't silently overwrite an existing document.
-    while (true) {
-      try {
-        await fs.access(target)
-        target = path.join(folderPath, `${safeName} (${suffix++}).rtf`)
-      } catch {
-        break
-      }
-    }
-
-    const wordCount = exporter.countWords(text)
-    const fileData = {
-      quillContent: exporter.textToDelta(text),
-      plainText: text,
-      wordCount,
-      imported: true,
-      importedWords: wordCount,
+    await fs.writeFile(state.currentFilePath, JSON.stringify({
+      quillContent: { ops: [{ insert: '\n' }] },
+      plainText: '',
+      wordCount: 0,
       lastModified: new Date().toISOString()
-    }
-    await fs.writeFile(target, JSON.stringify(fileData, null, 2))
+    }, null, 2))
+    state.isNewFile = true
 
-    // Count the document itself, but never the words.
+    // Count the document, never the words.
     const stats = await loadStats()
     stats.totalDocuments = (stats.totalDocuments || 0) + 1
-    const documentName = path.basename(target, path.extname(target))
+    const documentName = path.basename(state.currentFilePath, path.extname(state.currentFilePath))
     if (!stats.uniqueDocuments) stats.uniqueDocuments = []
     if (!stats.uniqueDocuments.includes(documentName)) {
       stats.uniqueDocuments.push(documentName)
     }
     await saveStats(stats)
 
-    console.log('Imported', wordCount, 'words to', target, '(excluded from word counts)')
-    event.reply('import-complete', {
-      success: true, path: target, name: path.basename(target), wordCount
-    })
+    state.store.set('userPreferences', { ...userPrefs, lastOpenedFile: state.currentFilePath })
+    state.currentSessionSettings = { mode: 'import', goal: 0, documentOption: 'new' }
+    state.mainWindow.loadFile('editor.html')
   } catch (error) {
-    console.error('Import failed:', error)
-    event.reply('import-complete', { success: false, error: error.message })
+    console.error('Error creating import document:', error)
   }
 })
+
 
 module.exports = {}

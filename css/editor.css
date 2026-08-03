@@ -193,6 +193,9 @@ body {
 }
 
 .ql-editor {
+    /* Anchors the placeholder pseudo-element to the editor rather than the
+       wider container, so it lines up with where typing actually starts. */
+    position: relative;
     max-width: 70ch;
     margin: 0 auto !important;
     /* Half an inch of page margin top and bottom (CSS `in` maps to 96px).
@@ -257,8 +260,12 @@ body {
 .ql-editor.ql-blank::before {
     color: var(--color-text-muted);
     font-style: normal;
+    /* Match the editor's own padding exactly so the placeholder sits on the
+       same baseline and left edge as the first typed character. */
     left: clamp(2rem, 6vw, 4rem);
     right: clamp(2rem, 6vw, 4rem);
+    top: 0.5in;
+    line-height: 1.85;
 }
 
 /* Quill toolbar buttons */
@@ -501,14 +508,17 @@ body {
 
 .editor-container.punishment-active .ql-editor,
 .editor-container.punishment-active #editor-wrapper,
-.editor-container.punishment-active #editor {
+.editor-container.punishment-active #editor,
+.editor-container.punishment-active .editor-main,
+.editor-container.punishment-active .ql-toolbar {
     background-color: #ff4444 !important;
 }
 
-/* Nuclear Mode Effects */
-.editor-container.nuclear-mode .ql-editor {
+/* Nuclear Mode Effects — the warning frame wraps the whole writing surface,
+   toolbar included, instead of only the text area. */
+.editor-container.nuclear-mode .editor-main {
     border: 2px solid #ff0000;
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    box-shadow: 0 0 14px rgba(255, 0, 0, 0.5);
 }
 
 .editor-container.nuclear-active {
@@ -519,7 +529,9 @@ body {
 
 .editor-container.nuclear-active .ql-editor,
 .editor-container.nuclear-active #editor-wrapper,
-.editor-container.nuclear-active #editor {
+.editor-container.nuclear-active #editor,
+.editor-container.nuclear-active .editor-main,
+.editor-container.nuclear-active .ql-toolbar {
     background-color: #ff4444 !important;
     transition: none !important;
 }
@@ -527,4 +539,17 @@ body {
 @keyframes nuclearPulse {
     from { background-color: #ff4444; }
     to { background-color: #ff6666; }
+}
+
+
+/* --- Import mode banner --------------------------------------------------- */
+.import-notice {
+    margin: 0 1.25rem 0.5rem;
+    padding: 0.6rem 1rem;
+    border-radius: 8px;
+    background: var(--color-accent-muted, rgba(20, 184, 166, 0.15));
+    border: 1px solid var(--color-accent);
+    color: var(--color-text-secondary);
+    font-size: 0.85rem;
+    text-align: center;
 }

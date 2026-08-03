@@ -176,10 +176,13 @@ if (!window.visibilityControllerLoaded) {
         hideExitButton() {
             // Check if we're in freewrite mode by looking at the session mode text
             const sessionModeElement = document.getElementById('sessionMode');
-            const isFreewrite = sessionModeElement && sessionModeElement.textContent.includes('Freewrite');
+            const modeText = sessionModeElement ? sessionModeElement.textContent : '';
+            // Import sessions have no goal to abandon, so there must always be a
+            // way out of them regardless of the user's hide-exit preference.
+            const alwaysShowExit = modeText.includes('Freewrite') || modeText.includes('Import');
             
-            // Always show exit button in freewrite mode
-            if (isFreewrite) {
+            // Always show exit button in freewrite and import modes
+            if (alwaysShowExit) {
                 const exitButton = document.getElementById('exitBtn');
                 if (exitButton) {
                     console.log('Showing exit button (freewrite mode)');
