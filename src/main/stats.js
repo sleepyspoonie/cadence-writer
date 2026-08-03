@@ -18,45 +18,109 @@ ipcMain.on('update-stats', (event, stats) => {
 })
 
 
-async function loadStats() {
+function defaultStats () {
+  return {
+    dailyStats: {},
+    sessionLogs: [],
+    totalDocuments: 0,
+    uniqueDocuments: [],
+    consecutiveEmptyDocs: 0,
+    lastWritingDate: null,
+    brokenDrought: 0,
+    streakRebirth: false,
+    lastStreakLength: 0,
+    streakWasBroken: false,
+    uniqueProjects: [],
+    appStartTime: null,
+    totalAppTime: 0,
+    totalWritingTime: 0,
+    timeWithoutWriting: 0,
+    firstHiddenAchievement: false,
+    longTermGoalCommitted: false,
+    missedLongTermDay: false,
+    reachedMidpoint: false,
+    totalRewards: 0,
+    totalConsequences: 0,
+    totalWordsNuked: 0,
+    bestDayWords: 0,
+    lastUpdated: new Date().toISOString()
+  };
+}
+
+function backupPath () {
+  return state.statsPath + '.backup';
+}
+
+// Returns parsed stats from `file`, or null if it is missing/unreadable.
+async function tryRead (file) {
   try {
-    const data = await fs.readFile(state.statsPath, 'utf8');
-    return JSON.parse(data);
+    const data = await fs.readFile(file, 'utf8');
+    const parsed = JSON.parse(data);
+    // A valid stats file is an object; anything else means corruption.
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+    return parsed;
   } catch (error) {
-    return {
-      dailyStats: {},
-      sessionLogs: [],
-      totalDocuments: 0,
-      uniqueDocuments: [],
-      consecutiveEmptyDocs: 0,
-      lastWritingDate: null,
-      brokenDrought: 0,
-      streakRebirth: false,
-      lastStreakLength: 0,
-      streakWasBroken: false,
-      uniqueProjects: [],
-      appStartTime: null,
-      totalAppTime: 0,
-      totalWritingTime: 0,
-      timeWithoutWriting: 0,
-      firstHiddenAchievement: false,
-      longTermGoalCommitted: false,
-      missedLongTermDay: false,
-      reachedMidpoint: false,
-      totalRewards: 0,
-      totalConsequences: 0,
-      totalWordsNuked: 0,
-      bestDayWords: 0,
-      lastUpdated: new Date().toISOString()
-    };
+    if (error.code !== 'ENOENT') {
+      console.error(`Could not read ${file}:`, error.message);
+    }
+    return null;
   }
 }
 
+// Loads stats, falling back to the rolling backup if the main file is
+// corrupt. Historically any read error returned blank defaults, which callers
+// then saved straight back over the real file — silently erasing every day of
+// writing history. Now a corrupt file is quarantined rather than overwritten,
+// and only a genuinely absent file yields empty stats.
+async function loadStats() {
+  const existing = await tryRead(state.statsPath);
+  if (existing) {
+    return Object.assign(defaultStats(), existing);
+  }
 
+  // Main file missing or unreadable — is there a usable backup?
+  const backup = await tryRead(backupPath());
+  if (backup) {
+    console.warn('stats.json was unreadable; recovered from backup');
+    return Object.assign(defaultStats(), backup);
+  }
+
+  // Nothing usable. If a file is physically present it is corrupt, so move it
+  // aside instead of letting the next save destroy it.
+  try {
+    await fs.access(state.statsPath);
+    const quarantine = `${state.statsPath}.corrupt-${Date.now()}`;
+    await fs.rename(state.statsPath, quarantine);
+    console.error('stats.json was corrupt; preserved a copy at', quarantine);
+  } catch (error) {
+    // ENOENT here is the normal first-run case.
+  }
+
+  return defaultStats();
+}
+
+// Writes atomically: serialise, write to a temp file, then rename over the
+// real one. A rename is atomic on both NTFS and ext4, so an interrupted save
+// can no longer leave a half-written stats.json behind. The previous good copy
+// is kept as stats.json.backup for recovery.
 async function saveStats(stats) {
   try {
     stats.lastUpdated = new Date().toISOString();
-    await fs.writeFile(state.statsPath, JSON.stringify(stats, null, 2));
+    const serialised = JSON.stringify(stats, null, 2);
+
+    // Keep the last known-good file as a backup before replacing it.
+    try {
+      await fs.copyFile(state.statsPath, backupPath());
+    } catch (error) {
+      if (error.code !== 'ENOENT') {
+        console.warn('Could not refresh stats backup:', error.message);
+      }
+    }
+
+    const tempPath = `${state.statsPath}.tmp`;
+    await fs.writeFile(tempPath, serialised);
+    await fs.rename(tempPath, state.statsPath);
+
     console.log('Stats saved');
     return true;
   } catch (error) {
