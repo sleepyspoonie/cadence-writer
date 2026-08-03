@@ -20,12 +20,12 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Setup Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v5
       with:
-        node-version: '20'
+        node-version: '22'
         cache: 'npm'
 
     - name: Install dependencies
@@ -34,6 +34,8 @@ jobs:
     - name: Build Windows
       if: matrix.os == 'windows-latest'
       run: npm run build:win
+      env:
+        DEBUG: electron-builder
 
     - name: Build macOS
       if: matrix.os == 'macos-latest'
@@ -45,21 +47,21 @@ jobs:
 
     - name: Upload Windows Artifacts
       if: matrix.os == 'windows-latest'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: cadence-writer-windows
         path: dist/*.exe
 
     - name: Upload macOS Artifacts
       if: matrix.os == 'macos-latest'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: cadence-writer-macos
         path: dist/Cadence Writer*.dmg
 
     - name: Upload Linux Artifacts
       if: matrix.os == 'ubuntu-latest'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         name: cadence-writer-linux
         path: dist/Cadence Writer*.AppImage
@@ -71,10 +73,10 @@ jobs:
 
     steps:
     - name: Download all artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
 
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           cadence-writer-windows/*

@@ -45,7 +45,6 @@
           ]
         }
       ],
-      "signAndEditExecutable": false,
       "verifyUpdateCodeSignature": false,
       "icon": "assets/icon.ico"
     },
