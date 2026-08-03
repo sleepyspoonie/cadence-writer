@@ -241,11 +241,11 @@ body {
 }
 
 .ql-toolbar .ql-stroke {
-    stroke: #666 !important;
+    stroke: var(--editor-icon, #666) !important;
 }
 
 .ql-toolbar .ql-fill {
-    fill: #666 !important;
+    fill: var(--editor-icon, #666) !important;
 }
 
 .ql-toolbar button:hover .ql-stroke,
@@ -259,7 +259,7 @@ body {
 }
 
 .ql-toolbar .ql-picker {
-    color: #666 !important;
+    color: var(--editor-icon, #666) !important;
 }
 
 .ql-toolbar .ql-picker-options {

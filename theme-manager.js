@@ -265,6 +265,10 @@ class ThemeManager {
             root.style.setProperty(property, value);
         });
         
+        // Built-in themes all use light paper, so clear any custom-theme icon
+        // override; editor.css then falls back to its default grey.
+        root.style.removeProperty('--editor-icon');
+        
         this.currentTheme = themeName;
         console.log(`Applied ${themeName} theme`);
     }
@@ -295,10 +299,23 @@ class ThemeManager {
         root.style.setProperty('--color-border-hover', isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)');
         root.style.setProperty('--color-overlay', isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.5)');
         
-        root.style.setProperty('--editor-bg', '#ffffff');
-        root.style.setProperty('--editor-text', '#1a1a1a');
-        root.style.setProperty('--editor-toolbar', '#fafafa');
-        root.style.setProperty('--editor-border', '#e0e0e0');
+        // Writing surface. Toolbar and border are derived from the page colour
+        // so the editor chrome stays legible whether the user picks light or
+        // dark paper.
+        const editorBg = customColors.editorBg || '#ffffff';
+        const editorText = customColors.editorText || '#1a1a1a';
+        const editorIsDark = this.isColorDark(editorBg);
+
+        root.style.setProperty('--editor-bg', editorBg);
+        root.style.setProperty('--editor-text', editorText);
+        root.style.setProperty('--editor-toolbar',
+            editorIsDark ? this.lightenColor(editorBg, 8) : this.darkenColor(editorBg, 3));
+        root.style.setProperty('--editor-border',
+            editorIsDark ? this.lightenColor(editorBg, 18) : this.darkenColor(editorBg, 12));
+        // Quill's toolbar icons are hardcoded mid-grey in editor.css; expose a
+        // contrast-aware value so they remain visible on dark paper.
+        root.style.setProperty('--editor-icon',
+            editorIsDark ? this.addOpacity(editorText, 0.75) : '#666666');
         
         this.currentTheme = 'custom';
         console.log('Applied custom theme');
@@ -327,6 +344,18 @@ class ThemeManager {
         const r = Math.min(255, rgb.r + (255 - rgb.r) * factor);
         const g = Math.min(255, rgb.g + (255 - rgb.g) * factor);
         const b = Math.min(255, rgb.b + (255 - rgb.b) * factor);
+        
+        return `#${Math.round(r).toString(16).padStart(2, '0')}${Math.round(g).toString(16).padStart(2, '0')}${Math.round(b).toString(16).padStart(2, '0')}`;
+    }
+    
+    darkenColor(color, percent) {
+        const rgb = this.hexToRgb(color);
+        if (!rgb) return color;
+        
+        const factor = 1 - (percent / 100);
+        const r = Math.max(0, rgb.r * factor);
+        const g = Math.max(0, rgb.g * factor);
+        const b = Math.max(0, rgb.b * factor);
         
         return `#${Math.round(r).toString(16).padStart(2, '0')}${Math.round(g).toString(16).padStart(2, '0')}${Math.round(b).toString(16).padStart(2, '0')}`;
     }

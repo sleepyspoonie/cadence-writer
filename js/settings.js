@@ -28,6 +28,8 @@
             textColor: document.getElementById('textColor').value,
             accentColor: document.getElementById('accentColor').value,
             cardColor: document.getElementById('cardColor').value,
+            editorBgColor: document.getElementById('editorBgColor').value,
+            editorTextColor: document.getElementById('editorTextColor').value,
             hideStatsPage: document.getElementById('hideStatsPage').checked,
             hideStatsSidebar: document.getElementById('hideStatsSidebar').checked,
             
@@ -156,7 +158,9 @@
                         background: document.getElementById('bgColor').value,
                         text: document.getElementById('textColor').value,
                         accent: document.getElementById('accentColor').value,
-                        card: document.getElementById('cardColor').value
+                        card: document.getElementById('cardColor').value,
+                        editorBg: document.getElementById('editorBgColor').value,
+                        editorText: document.getElementById('editorTextColor').value
                     };
                     window.themeManager.applyCustomTheme(colors);
                 }
@@ -224,7 +228,9 @@
                     background: document.getElementById('bgColor').value,
                     text: document.getElementById('textColor').value,
                     accent: document.getElementById('accentColor').value,
-                    card: document.getElementById('cardColor').value
+                    card: document.getElementById('cardColor').value,
+                    editorBg: document.getElementById('editorBgColor').value,
+                    editorText: document.getElementById('editorTextColor').value
                 };
                 window.themeManager.applyCustomTheme(colors);
             }
@@ -408,7 +414,9 @@
                 background: document.getElementById('bgColor').value,
                 text: document.getElementById('textColor').value,
                 accent: document.getElementById('accentColor').value,
-                card: document.getElementById('cardColor').value
+                card: document.getElementById('cardColor').value,
+                editorBg: document.getElementById('editorBgColor').value,
+                editorText: document.getElementById('editorTextColor').value
             },
             hideStatsPage: document.getElementById('hideStatsPage').checked,
             hideStatsSidebar: document.getElementById('hideStatsSidebar').checked,
@@ -546,12 +554,16 @@
                 document.getElementById('textColor').value = settings.appearanceSettings.customColors.text || '#e0e0e0';
                 document.getElementById('accentColor').value = settings.appearanceSettings.customColors.accent || '#14b8a6';
                 document.getElementById('cardColor').value = settings.appearanceSettings.customColors.card || '#252525';
+                document.getElementById('editorBgColor').value = settings.appearanceSettings.customColors.editorBg || '#ffffff';
+                document.getElementById('editorTextColor').value = settings.appearanceSettings.customColors.editorText || '#1a1a1a';
                 
                 // Update color value displays
                 document.querySelector('#bgColor + .color-value').textContent = settings.appearanceSettings.customColors.background || '#1a1a1a';
                 document.querySelector('#textColor + .color-value').textContent = settings.appearanceSettings.customColors.text || '#e0e0e0';
                 document.querySelector('#accentColor + .color-value').textContent = settings.appearanceSettings.customColors.accent || '#14b8a6';
                 document.querySelector('#cardColor + .color-value').textContent = settings.appearanceSettings.customColors.card || '#252525';
+                document.querySelector('#editorBgColor + .color-value').textContent = settings.appearanceSettings.customColors.editorBg || '#ffffff';
+                document.querySelector('#editorTextColor + .color-value').textContent = settings.appearanceSettings.customColors.editorText || '#1a1a1a';
             }
             
             document.getElementById('hideStatsPage').checked = settings.appearanceSettings.hideStatsPage || false;
@@ -630,7 +642,9 @@
                 background: document.getElementById('bgColor').value,
                 text: document.getElementById('textColor').value,
                 accent: document.getElementById('accentColor').value,
-                card: document.getElementById('cardColor').value
+                card: document.getElementById('cardColor').value,
+                editorBg: document.getElementById('editorBgColor').value,
+                editorText: document.getElementById('editorTextColor').value
             },
             hideStatsPage: document.getElementById('hideStatsPage').checked,
             hideStatsSidebar: document.getElementById('hideStatsSidebar').checked,

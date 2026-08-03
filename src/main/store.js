@@ -45,7 +45,9 @@ async function initializeStore() {
             background: '#1a1a1a',
             text: '#e0e0e0',
             accent: '#14b8a6',
-            card: '#252525'
+            card: '#252525',
+            editorBg: '#ffffff',
+            editorText: '#1a1a1a'
           },
           hideStatsPage: false,
           hideStatsSidebar: false,
