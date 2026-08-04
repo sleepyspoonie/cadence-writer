@@ -3,6 +3,7 @@
     const quill = new Quill('#editor', {
         theme: 'snow',
         placeholder: 'Start writing your masterpiece...',
+        scrollingContainer: '.ql-container',
         modules: {
             toolbar: [
                 [{ 'header': [1, 2, 3, false] }],
@@ -1063,8 +1064,14 @@
         if (!inEditor) return;
         pasteDetected = true;
         const before = documentWordCount();
+        const scroller = document.querySelector('.ql-container');
+        const scrollBefore = scroller ? scroller.scrollTop : null;
         // Quill processes the paste asynchronously; measure once it has landed.
         setTimeout(() => {
+            // Keep the writer where they were rather than snapping to the top.
+            if (scroller && scrollBefore !== null && scroller.scrollTop !== scrollBefore) {
+                scroller.scrollTop = scrollBefore;
+            }
             const added = documentWordCount() - before;
             if (added > 0) {
                 pastedWords += added;
